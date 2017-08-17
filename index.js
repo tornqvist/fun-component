@@ -68,7 +68,7 @@ module.exports = function component(props) {
 
     // Overwrite render with a force morph wrapper for internal use
     props.render = function render() {
-      var args = Array.prototype.slice(arguments);
+      var args = Array.prototype.slice.call(arguments);
 
       if (this._hasWindow && _element) {
         this.log.debug('render', args);
@@ -87,7 +87,7 @@ module.exports = function component(props) {
 
   Component.prototype.update = function () {
     var value;
-    var args = Array.prototype.slice(arguments);
+    var args = Array.prototype.slice.call(arguments);
 
     if (_update) {
       value = _update.call(props, _element, args, _args);
@@ -106,7 +106,7 @@ module.exports = function component(props) {
   };
 
   Component.prototype.createElement = function() {
-    var args = Array.prototype.slice(arguments);
+    var args = Array.prototype.slice.call(arguments);
 
     if (props.cache && !this._loaded && _element) {
       if (_update) {
@@ -143,7 +143,7 @@ module.exports = function component(props) {
 
   var instance = new Component();
   return function () {
-    var args = Array.prototype.slice(arguments);
+    var args = Array.prototype.slice.call(arguments);
     return instance.render.apply(instance, args);
   };
 };
