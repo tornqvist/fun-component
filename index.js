@@ -60,21 +60,27 @@ module.exports = function component(props) {
     this.log = nanologger(props.name);
     this.log.debug('create');
 
+    var self = this;
+
     // Expose debug logger on props
-    props.debug = this.log.debug.bind(this.log);
+    props.debug = function () {
+      return self.log.debug.apply(self, Array.prototype.slice.call(arguments));
+    };
 
     // Overwrite (or add) update method to props
-    props.update = this.update.bind(this);
+    props.update = function () {
+      return self.update.apply(self, Array.prototype.slice.call(arguments));
+    };
 
     // Overwrite render with a force morph wrapper for internal use
     props.render = function render() {
       var args = Array.prototype.slice.call(arguments);
 
-      if (this._hasWindow && _element) {
-        this.log.debug('render', args);
-        morph(_element, this._handleRender(args));
+      if (self._hasWindow && _element) {
+        self.log.debug('render', args);
+        morph(_element, self._handleRender(args));
       } else {
-        return this.render.apply(this, args);
+        return self.render.apply(self, args);
       }
     };
 
