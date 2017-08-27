@@ -64,7 +64,7 @@ module.exports = function component(props) {
 
     // Expose debug logger on props
     props.debug = function () {
-      return self.log.debug.apply(self, Array.prototype.slice.call(arguments));
+      self.log.debug.apply(self.log, Array.prototype.slice.call(arguments));
     };
 
     // Overwrite (or add) update method to props
