@@ -56,7 +56,7 @@ module.exports = function component(props) {
   }
 
   function Component() {
-    Nanocomponent.call(this);
+    Nanocomponent.call(this, props.name);
     this.log = nanologger(props.name);
     this.log.debug('create');
 
