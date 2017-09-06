@@ -4,7 +4,10 @@
   "description": "Performant component as function",
   "main": "index.js",
   "scripts": {
-    "test": "eslint ./"
+    "posttest": "eslint ./",
+    "test": "npm run test:node && npm run test:browser",
+    "test:browser": "browserify test/browser.js | tape-run | tap-format-spec",
+    "test:node": "NODE_ENV=test node test/node.js | tap-format-spec"
   },
   "repository": {
     "type": "git",
@@ -22,7 +25,12 @@
   },
   "homepage": "https://github.com/tornqvist/fun-component#readme",
   "devDependencies": {
-    "eslint": "^4.4.1"
+    "@tap-format/spec": "^0.2.0",
+    "bel": "^5.1.0",
+    "browserify": "^14.4.0",
+    "eslint": "^4.4.1",
+    "tape": "^4.8.0",
+    "tape-run": "^3.0.0"
   },
   "dependencies": {
     "nanocomponent": "^6.4.0",

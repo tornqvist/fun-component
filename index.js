@@ -118,19 +118,19 @@ module.exports = function component(props) {
 
   if (props.beforerender) {
     Component.prototype.beforerender = function (element) {
-      props.beforerender.apply(props, element, this._arguments);
+      props.beforerender.apply(props, [ element ].concat(this._arguments));
     };
   }
 
   if (props.afterupdate) {
     Component.prototype.afterupdate = function (element) {
-      props.afterupdate.apply(props, element, this._arguments);
+      props.afterupdate.apply(props, [ element ].concat(this._arguments));
     };
   }
 
   if (props.afterreorder) {
     Component.prototype.afterreorder = function (element) {
-      props.afterreorder.apply(props, element, this._arguments);
+      props.afterreorder.apply(props, [ element ].concat(this._arguments));
     };
   }
 
