@@ -1,18 +1,20 @@
-var morph = require('nanomorph');
 var nanologger = require('nanologger');
 var Nanocomponent = require('nanocomponent');
 
 /**
  * Lifecycle hooks for a statefull component.
  *
- * @param {any} props Function or Object.
- * @param {string} props.name Component name, used for debugging.
- * @param {boolean} props.cache Whether to save the element in-between mounts.
- * @param {function} props.render Create element.
- * @param {function} props.update Modify component on consecutive calls. Return whether component should re-render.
- * @param {function} props.load Called when component is mounted in the DOM.
- * @param {function} props.unload Called when component is removed from the DOM.
- * @returns {function} Renders component.
+ * @param {any} props Function or Object
+ * @param {string} props.name Component name, used for debugging
+ * @param {boolean} props.cache Whether to save the element in-between mounts
+ * @param {function} props.render Create element
+ * @param {function} props.update Determine whether component should re-render
+ * @param {function} props.load Called when component is mounted in DOM
+ * @param {function} props.unload Called when component is removed from DOM
+ * @param {function} props.beforerender Called before component is added to DOM
+ * @param {function} props.afterupdate Called after update returns true
+ * @param {function} props.afterreorder Called after component is reordered
+ * @returns {function} Renders component
  *
  * @example
  * component(function user(user) {
@@ -22,13 +24,13 @@ var Nanocomponent = require('nanocomponent');
  * @example
  * component({
  *   name: 'map',
- *   update(element, coordinates, emit) {
- *     if (coordinates.lng !== prevCoordinates.lng || coordinates.lat !== prevCoordinates.lat) {
+ *   update(element, [coordinates], [prev]) {
+ *     if (coordinates.lng !== prev.lng || coordinates.lat !== prev.lat) {
  *       this.map.setCenter([coordinates.lng, coordinates.lat]);
  *     }
  *     return false;
  *   },
- *   load(element, coordinates, emit) {
+ *   load(element, coordinates) {
  *     this.map = new mapboxgl.Map({
  *       container: element,
  *       center: [coordinates.lng, coordinates.lat],
@@ -37,103 +39,137 @@ var Nanocomponent = require('nanocomponent');
  *   unload() {
  *     this.map.destroy();
  *   },
- *   render(coordinates, emit) {
+ *   render(coordinates) {
  *     return html`<div class="Map"></div>`;
+ *   }
+ * })
+ *
+ * @example
+ * component({
+ *   name: 'expander',
+ *   render() {
+ *     const toggle = () => {
+ *       this.isExpanded = !this.isExpanded;
+ *       this.rerender();
+ *     };
+ *
+ *     return html`
+ *       <button onclick=${ toggle }>Expand</button>
+ *       <p style="display: ${ this.isExpanded ? 'block' : 'none' };">
+ *         Lorem ipsum dolor sit…
+ *       </p>
+ *     `;
  *   }
  * })
  */
 
 module.exports = function component(props) {
-  var _args, _element, _render, _update;
+  var _element, _render;
+
+  /**
+   * Determine what to use for `createElement`
+   */
 
   if (typeof props === 'function') {
     _render = props;
   } else if (typeof props === 'object' && props.render) {
     _render = props.render;
-    _update = props.update;
   } else {
     throw (new Error('Component must be provided with a render function'));
   }
 
+  /**
+   * Create a logger for internal usage
+   */
+
+  var log = nanologger(props.name);
+
   function Component() {
     Nanocomponent.call(this, props.name);
-    this.log = nanologger(props.name);
-    this.log.debug('create');
+
+    log.debug('create');
 
     var self = this;
 
-    // Expose debug logger on props
-    props.debug = function () {
-      self.log.debug.apply(self.log, Array.prototype.slice.call(arguments));
-    };
-
-    // Overwrite (or add) update method to props
-    props.update = function () {
-      return self.update.apply(self, Array.prototype.slice.call(arguments));
-    };
-
-    // Overwrite render with a force morph wrapper for internal use
-    props.render = function render() {
-      var args = Array.prototype.slice.call(arguments);
-
-      if (self._hasWindow && _element) {
-        self.log.debug('render', args);
-        morph(_element, self._handleRender(args));
-      } else {
-        return self.render.apply(self, args);
+    // Expose all logger methods direcly on the props
+    for (var key in log) {
+      if (/^[^_]/.test(key)) {
+        props[key] = props[key] || function () {
+          log[key].apply(log, arguments);
+        };
       }
-    };
+    }
 
-    Object.defineProperty(props, 'id', {
-      get: function () { return this._id; }
-    });
+    // Expose `rerender` on props
+    props.rerender = function () {
+      self.rerender();
+    };
   }
+
+  /**
+   * Extend Nanocomponent and proxy lifecycle methods with latest arguments
+   */
 
   Component.prototype = Object.create(Nanocomponent.prototype);
 
+  if (props.beforerender) {
+    Component.prototype.beforerender = function (element) {
+      props.beforerender.apply(props, element, this._arguments);
+    };
+  }
+
+  if (props.afterupdate) {
+    Component.prototype.afterupdate = function (element) {
+      props.afterupdate.apply(props, element, this._arguments);
+    };
+  }
+
+  if (props.afterreorder) {
+    Component.prototype.afterreorder = function (element) {
+      props.afterreorder.apply(props, element, this._arguments);
+    };
+  }
+
   Component.prototype.update = function () {
-    var value;
+    var result;
     var args = Array.prototype.slice.call(arguments);
 
-    if (_update) {
-      value = _update.call(props, _element, args, _args);
+    if (props.update) {
+      result = props.update.apply(props, this.element, args, this._arguments);
     } else {
-      value = shouldUpdate(args, _args);
+      result = diff(args, this._arguments);
     }
 
-    if (value) {
-      this.log.debug('update', args);
+    if (result) {
+      log.debug('update', args);
     }
 
-    // Save reference to latest set of arguments used to render
-    _args = args;
-
-    return value;
+    return result;
   };
 
   Component.prototype.createElement = function() {
     var args = Array.prototype.slice.call(arguments);
 
     if (props.cache && !this._loaded && _element) {
-      if (_update) {
-        _update.call(props, _element, args, _args);
+      if (props.update) {
+        // Just try and update cached elements
+        props.update.call(props, _element, args, this._arguments);
+        if (this.afterupdate) {
+          this.afterupdate(_element);
+        }
       }
-
       return _element;
     } else if (!this.element) {
-      this.log.debug('render', args);
+      log.debug('render', args);
     }
-
-    // Save reference to latest set of arguments used to render
-    _args = args;
 
     return _render.apply(props, args);
   };
 
-  Component.prototype.load = function() {
-    _element = this.element;
+  Component.prototype.load = function(element) {
+    _element = element;
     if (props.load) {
-      props.load.apply(props, [ _element ].concat(_args));
+      props.load.apply(props, [ element ].concat(this._arguments));
     }
   };
 
@@ -143,18 +179,48 @@ module.exports = function component(props) {
     }
 
     if (props.unload) {
-      props.unload.apply(props, _args);
+      props.unload.apply(props, this._arguments);
     }
   };
 
-  var instance = new Component();
-  return function () {
+  /**
+   * Create an instance of the newly configured component
+   */
+
+  var component = new Component();
+
+  /**
+   * Create a middleman render method
+   */
+
+  var render = function () {
     var args = Array.prototype.slice.call(arguments);
-    return instance.render.apply(instance, args);
+    return component.render.apply(component, args);
   };
+
+  /**
+   * Overwrite function name with the original name
+   */
+
+  Object.defineProperty(render, 'name', { writable: true });
+  render.name = props.name;
+
+  /**
+   * Expose just the wrapper function
+   */
+
+  return render;
 };
 
-function shouldUpdate(args, prev) {
+/**
+ * Simple shallow diff of two sets of arguments
+ *
+ * @param {array} args
+ * @param {array} prev
+ * @returns {boolean}
+ */
+
+function diff(args, prev) {
   // A different set of arguments issues a rerender
   if (args.length !== prev.length) { return true; }
 
