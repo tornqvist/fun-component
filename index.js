@@ -45,22 +45,26 @@ var Nanocomponent = require('nanocomponent');
  * })
  *
  * @example
- * component({
- *   name: 'expander',
- *   render() {
- *     const toggle = () => {
- *       this.isExpanded = !this.isExpanded;
- *       this.rerender();
- *     };
+ * function createComponent() {
+ *   let isExpanded = false;
+ *   const expander = { name: 'expander', render };
  *
+ *   function toggle() {
+ *     isExpanded = !isExpanded;
+ *     expander.rerender();
+ *   }
+ *
+ *   function render() {
  *     return html`
  *       <button onclick=${ toggle }>Expand</button>
- *       <p style="display: ${ this.isExpanded ? 'block' : 'none' };">
+ *       <p style="display: ${ isExpanded ? 'block' : 'none' };">
  *         Lorem ipsum dolor sit…
  *       </p>
  *     `;
  *   }
- * })
+ *
+ *   return component(expander);
+ * }
  */
 
 module.exports = function component(props) {
@@ -135,7 +139,7 @@ module.exports = function component(props) {
     var args = Array.prototype.slice.call(arguments);
 
     if (props.update) {
-      result = props.update.apply(props, this.element, args, this._arguments);
+      result = props.update.call(props, this.element, args, this._arguments);
     } else {
       result = diff(args, this._arguments);
     }
