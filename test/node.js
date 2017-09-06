@@ -1,12 +1,10 @@
-var html = require('bel');
-var tape = require('tape');
-var component = require('../');
+const html = require('bel');
+const test = require('tape');
+const component = require('../');
 
-tape('server side render', function (assert) {
-  var test = assert.test;
-
-  test('render', function (t) {
-    var render = component(greeting);
+test('server side render', t => {
+  t.test('render', t => {
+    const render = component(greeting);
 
     t.plan(1);
     t.equal(
@@ -16,8 +14,8 @@ tape('server side render', function (assert) {
     );
   });
 
-  test('ignore cache', function (t) {
-    var render = component({
+  t.test('ignore cache', t => {
+    const render = component({
       cache: true,
       render: greeting
     });
@@ -35,25 +33,15 @@ tape('server side render', function (assert) {
     );
   });
 
-  test('ignore update', function (t) {
-    var render = component({
-      update: function () {
-        return false;
-      },
-      render: greeting
+  t.test('mirror name', t => {
+    const asProps = component({ name: 'props', render: greeting });
+    const asFn = component(function fn(args) {
+      return greeting.apply(this, args);
     });
 
     t.plan(2);
-    t.equal(
-      render('world').toString(),
-      greeting('world').toString(),
-      'first time render'
-    );
-    t.equal(
-      render('space').toString(),
-      greeting('space').toString(),
-      'subsequent render'
-    );
+    t.equal(asProps.name, 'props', 'props.name is mirrored');
+    t.equal(asFn.name, 'fn', 'fn.name is mirrored');
   });
 });
 
