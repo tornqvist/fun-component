@@ -95,14 +95,8 @@ module.exports = function component(props) {
 
     var self = this;
 
-    // Expose all logger methods direcly on the props
-    for (var key in log) {
-      if (/^[^_]/.test(key)) {
-        props[key] = props[key] || function () {
-          log[key].apply(log, arguments);
-        };
-      }
-    }
+    // Expose `logger` on props
+    props.log = log;
 
     // Expose `rerender` on props
     props.rerender = function () {

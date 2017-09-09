@@ -128,16 +128,17 @@ test('browser', t => {
     const methods = [ 'trace', 'debug', 'info', 'warn', 'error', 'fatal' ];
     const props = { render };
 
-    t.plan(methods.length);
+    t.plan(methods.length + 1);
 
     component(props)('world');
 
     function render() {
+      t.equal(typeof this.log, 'object', 'has log object on self');
       methods.map(key => {
         t.equal(
-          typeof this[key],
+          typeof this.log[key],
           'function',
-          `${ key } attached to ${ typeof this }`
+          `${ key } attached to self.log`
         );
       });
       return greeting.apply(this, arguments);
