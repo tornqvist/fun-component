@@ -1,0 +1,104 @@
+@import "https://api.mapbox.com/mapbox-gl-js/v0.39.1/mapbox-gl.css";
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  height: 100%;
+}
+
+.App {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  align-items: stretch;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+}
+
+.Map {
+  flex-grow: 1;
+  position: relative;
+}
+
+.Map-container {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.Button {
+  display: block;
+  padding: 12px;
+  border: 3px solid currentColor;
+
+  position: absolute;
+  right: 2.5vw;
+  top: 2.5vw;
+
+  color: #fff;
+  text-transform: uppercase;
+  font-size: 22px;
+  font-weight: bold;
+  background: #388EE8;
+  border-radius: 0;
+}
+
+.Button:disabled {
+  opacity: 0.6;
+}
+
+.Error {
+  padding: 20px;
+  text-align: center;
+  font-weight: bold;
+  background: #F02E2E;
+}
+
+.Error:empty {
+  padding: 0;
+}
+
+.Menu {
+  padding: 20px 20px 15px;
+  text-align: center;
+}
+
+.Menu-item,
+.Menu-item:visited {
+  display: inline-block;
+  padding-bottom: 5px;
+  border-bottom: 1px solid transparent;
+  margin: 0 10px;
+  font-weight: bold;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: #388EE8;
+}
+
+.Menu-item:hover {
+  border-bottom-color: currentColor;
+}
+
+.Text {
+  max-width: 75em;
+  padding: 0 5vw;
+  margin: 0 auto;
+  position: relative;
+}
+
+.Text * {
+  margin: 1em 0;
+}
+
+.Text a {
+  color: #388EE8;
+}
+
+.Text a:visited {
+  color: #BD10E0;
+}

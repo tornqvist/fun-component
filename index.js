@@ -9,8 +9,8 @@ var Nanocomponent = require('nanocomponent');
  * @param {boolean} props.cache Whether to save the element in-between mounts
  * @param {function} props.render Create element
  * @param {function} props.update Determine whether component should re-render
- * @param {function} props.load Called when component is mounted in DOM
- * @param {function} props.unload Called when component is removed from DOM
+ * @param {function} props.load Called after component is mounted in DOM
+ * @param {function} props.unload Called after component is removed from DOM
  * @param {function} props.beforerender Called before component is added to DOM
  * @param {function} props.afterupdate Called after update returns true
  * @param {function} props.afterreorder Called after component is reordered

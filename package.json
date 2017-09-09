@@ -7,7 +7,9 @@
     "posttest": "eslint ./",
     "test": "npm run test:node && npm run test:browser",
     "test:browser": "browserify test/browser.js | tape-run | tap-format-spec",
-    "test:node": "NODE_ENV=test node test/node.js | tap-format-spec"
+    "test:node": "NODE_ENV=test node test/node.js | tap-format-spec",
+    "example:mapbox": "FUN_COMPONENT=../.. npm start --prefix ./examples/mapbox",
+    "deploy:mapbox": "npm run deploy --prefix ./examples/mapbox"
   },
   "repository": {
     "type": "git",
@@ -28,7 +30,10 @@
     "@tap-format/spec": "^0.2.0",
     "bel": "^5.1.0",
     "browserify": "^14.4.0",
+    "budo": "^10.0.4",
+    "envify": "^4.1.0",
     "eslint": "^4.4.1",
+    "now": "^8.2.1",
     "tape": "^4.8.0",
     "tape-run": "^3.0.0"
   },

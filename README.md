@@ -3,9 +3,15 @@
 [![npm version](https://img.shields.io/npm/v/fun-component.svg?)](https://npmjs.org/package/fun-component) [![build status](https://img.shields.io/travis/tornqvist/fun-component/master.svg?style=flat-square)](https://travis-ci.org/tornqvist/fun-component)
 [![downloads](http://img.shields.io/npm/dm/fun-component.svg?style=flat-square)](https://npmjs.org/package/fun-component)
 
-A component wrapper library that exposes a single function and nothing else. Built on [nanocomponent](https://github.com/yoshuawuyts/nanocomponent).
+A component wrapper library that exposes a single function and nothing else. Built on [nanocomponent](https://github.com/choojs/nanocomponent).
 
 ## Usage
+
+For example implementations, see [/examples](/examples). Either spin them up locally or visit the link.
+
+- Mapbox (using the `cache` option)
+  - `npm run example:mapbox`
+  - https://fun-component-mapbox.now.sh
 
 ```javascript
 const html = require('bel');
@@ -38,12 +44,15 @@ Create a new component. Either takes a function as only argument or an object wi
 
 ### Options
 
-- `name {string}` Used for logging.
-- `cache {boolean}` Whether to save the component in-between mounts. Useful for third party libraries such as maps. *Default: false.*
+- `name {string}` Component name, used for debugging
+- `cache {boolean}` Whether to save the element in-between mounts *Default: false*
 - `render {function}` Create element
-- `update {function}` Here's where you may modify the element. Should return true/false whether the elements needs to be re-rendered. *Default: shallow diff.*
-- `load {function}` Called when component is mounted in the DOM.
-- `unload {function}` Called when component is removed from the DOM.
+- `update {function}` Determine whether component should re-render *Default: shallow diff*
+- `load {function}` Called *after* component is mounted in DOM
+- `unload {function}` Called after component is removed from DOM
+- `beforerender {function}` Called *before* component is added to DOM
+- `afterupdate {function}` Called after update returns true
+- `afterreorder {function}` Called after component is reordered
 
 ## See Also
 - [yoshuawuyts/microcomponent](https://github.com/yoshuawuyts/microcomponent)
@@ -51,3 +60,7 @@ Create a new component. Either takes a function as only argument or an object wi
 
 ## License
 [MIT](https://tldrlegal.com/license/mit-license)
+
+## TODO
+
+- [ ] Add list example
