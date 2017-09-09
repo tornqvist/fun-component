@@ -219,8 +219,9 @@ function view(state = {}) {
 
   function navigate(event) {
     const href = event.target.pathname;
-    window.history.pushState(state, document.title, href);
-    morph(document.body, view(Object.assign({}, state, { href })));
+    const next = Object.assign({}, state, { href });
+    window.history.pushState(next, document.title, href);
+    morph(document.body, view(next));
     event.preventDefault();
   }
 

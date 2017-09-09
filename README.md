@@ -7,12 +7,6 @@ A component wrapper library that exposes a single function and nothing else. Bui
 
 ## Usage
 
-For example implementations, see [/examples](/examples). Either spin them up locally or visit the link.
-
-- Mapbox (using the `cache` option)
-  - `npm run example:mapbox`
-  - https://fun-component-mapbox.now.sh
-
 ```javascript
 const html = require('bel');
 const component = require('fun-component');
@@ -35,6 +29,12 @@ module.exports = component({
   }
 });
 ```
+
+For example implementations, see [/examples](/examples). Either spin them up locally or visit the link.
+
+- Mapbox (using the `cache` option)
+  - `npm run example:mapbox`
+  - https://fun-component-mapbox.now.sh
 
 ## API
 
