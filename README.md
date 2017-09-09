@@ -30,6 +30,8 @@ module.exports = component({
 });
 ```
 
+### Examples
+
 For example implementations, see [/examples](/examples). Either spin them up locally or visit the link.
 
 - Mapbox (using the `cache` option)
