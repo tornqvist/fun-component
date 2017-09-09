@@ -85,7 +85,7 @@ html {
 }
 
 .Text {
-  max-width: 75em;
+  max-width: 45em;
   padding: 0 5vw;
   margin: 0 auto;
   position: relative;
@@ -93,6 +93,10 @@ html {
 
 .Text * {
   margin: 1em 0;
+}
+
+.Text h1 {
+  text-align: center;
 }
 
 .Text a {

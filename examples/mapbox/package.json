@@ -8,7 +8,7 @@
     "bel": "*",
     "budo": "*",
     "envify": "*",
-    "fun-component": "*",
+    "fun-component": "next",
     "nanomorph": "*"
   }
 }
