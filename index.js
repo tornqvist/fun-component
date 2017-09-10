@@ -68,7 +68,7 @@ var Nanocomponent = require('nanocomponent');
  */
 
 module.exports = function component(props) {
-  var _element, _render;
+  var _args, _element, _render;
 
   /**
    * Determine what to use for `createElement`
@@ -112,19 +112,19 @@ module.exports = function component(props) {
 
   if (props.beforerender) {
     Component.prototype.beforerender = function (element) {
-      props.beforerender.apply(props, [ element ].concat(this._arguments));
+      props.beforerender.apply(props, [ element ].concat(_args));
     };
   }
 
   if (props.afterupdate) {
     Component.prototype.afterupdate = function (element) {
-      props.afterupdate.apply(props, [ element ].concat(this._arguments));
+      props.afterupdate.apply(props, [ element ].concat(_args));
     };
   }
 
   if (props.afterreorder) {
     Component.prototype.afterreorder = function (element) {
-      props.afterreorder.apply(props, [ element ].concat(this._arguments));
+      props.afterreorder.apply(props, [ element ].concat(_args));
     };
   }
 
@@ -133,14 +133,17 @@ module.exports = function component(props) {
     var args = Array.prototype.slice.call(arguments);
 
     if (props.update) {
-      result = props.update.call(props, this.element, args, this._arguments);
+      result = props.update.call(props, this.element, args, _args);
     } else {
-      result = diff(args, this._arguments);
+      result = diff(args, _args);
     }
 
     if (result) {
       log.debug('update', args);
     }
+
+    // Save an internal reference to last arguments
+    _args = args;
 
     return result;
   };
@@ -151,7 +154,7 @@ module.exports = function component(props) {
     if (props.cache && !this._loaded && _element) {
       if (props.update) {
         // Just try and update cached elements
-        props.update.call(props, _element, args, this._arguments);
+        props.update.call(props, _element, args, _args);
         if (this.afterupdate) {
           this.afterupdate(_element);
         }
@@ -161,13 +164,16 @@ module.exports = function component(props) {
       log.debug('render', args);
     }
 
+    // Save an internal reference to last arguments
+    _args = args;
+
     return _render.apply(props, args);
   };
 
   Component.prototype.load = function(element) {
     _element = element;
     if (props.load) {
-      props.load.apply(props, [ element ].concat(this._arguments));
+      props.load.apply(props, [ element ].concat(_args));
     }
   };
 
@@ -177,7 +183,7 @@ module.exports = function component(props) {
     }
 
     if (props.unload) {
-      props.unload.apply(props, this._arguments);
+      props.unload.apply(props, _args);
     }
   };
 
