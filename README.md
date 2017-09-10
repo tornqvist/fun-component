@@ -3,7 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/fun-component.svg?)](https://npmjs.org/package/fun-component) [![build status](https://img.shields.io/travis/tornqvist/fun-component/master.svg?style=flat-square)](https://travis-ci.org/tornqvist/fun-component)
 [![downloads](http://img.shields.io/npm/dm/fun-component.svg?style=flat-square)](https://npmjs.org/package/fun-component)
 
-A component wrapper library that exposes a single function and nothing else. Built on [nanocomponent](https://github.com/choojs/nanocomponent).
+A component wrapper library that exposes a single function that renders and updates a DOM node. Built on [nanocomponent](https://github.com/choojs/nanocomponent).
 
 ## Usage
 
@@ -17,10 +17,10 @@ module.exports = component({
     return props.color !== prev.color;
   },
   load(element, props) {
-    this.debug(`mounted ${ this.name }: `, element);
+    this.log.trace(`mounted ${ this.name }: `, element);
   },
   unload(element, props) {
-    this.debug(`unmounted ${ this.name }`);
+    this.log.trace(`unmounted ${ this.name }`);
   },
   render(props) {
     html`
@@ -40,7 +40,7 @@ For example implementations, see [/examples](/examples). Either spin them up loc
 
 ## API
 
-### `component(fn|object)`
+### `component(function|object)`
 
 Create a new component. Either takes a function as only argument or an object with a `render` method on it.
 
@@ -56,6 +56,13 @@ Create a new component. Either takes a function as only argument or an object wi
 - `afterupdate {function}` Called after update returns true
 - `afterreorder {function}` Called after component is reordered
 
+### Methods
+
+In the process of creating a component some entries are added on to the props for internal usage.
+
+- `log {object}` an instance of [nanologger](https://github.com/choojs/nanologger)  is exposed on to the props for debugging purposes
+- `rerender {function}` run `render` with the last set up supplied arguments, bypassing update
+
 ## See Also
 - [yoshuawuyts/microcomponent](https://github.com/yoshuawuyts/microcomponent)
 - [choojs/nanocomponent](https://github.com/choojs/nanocomponent)
@@ -66,3 +73,5 @@ Create a new component. Either takes a function as only argument or an object wi
 ## TODO
 
 - [ ] Add list example
+- [ ] Add rerender example
+- [ ] Add pure function example

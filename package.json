@@ -1,12 +1,12 @@
 {
   "name": "fun-component",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Performant component as function",
   "main": "index.js",
   "scripts": {
     "posttest": "eslint ./",
     "test": "npm run test:node && npm run test:browser",
-    "test:browser": "browserify test/browser.js | tape-run | tap-format-spec",
+    "test:browser": "browserify test/browser.js -t yo-yoify | tape-run | tap-format-spec",
     "test:node": "NODE_ENV=test node test/node.js | tap-format-spec",
     "example:mapbox": "FUN_COMPONENT=../.. npm start --prefix ./examples/mapbox",
     "deploy:mapbox": "npm run deploy --prefix ./examples/mapbox"
@@ -35,7 +35,8 @@
     "eslint": "^4.4.1",
     "now": "^8.2.1",
     "tape": "^4.8.0",
-    "tape-run": "^3.0.0"
+    "tape-run": "^3.0.0",
+    "yo-yoify": "^3.7.3"
   },
   "dependencies": {
     "nanocomponent": "^6.4.0",

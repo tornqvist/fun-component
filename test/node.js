@@ -1,10 +1,12 @@
-const html = require('bel');
-const test = require('tape');
-const component = require('../');
+/* eslint-env es6 */
 
-test('server side render', t => {
-  t.test('render', t => {
-    const render = component(greeting);
+var html = require('bel');
+var test = require('tape');
+var component = require('../');
+
+test('server side render', function (t) {
+  t.test('render', function (t) {
+    var render = component(greeting);
 
     t.plan(1);
     t.equal(
@@ -14,8 +16,8 @@ test('server side render', t => {
     );
   });
 
-  t.test('ignore cache', t => {
-    const render = component({
+  t.test('ignore cache', function (t) {
+    var render = component({
       cache: true,
       render: greeting
     });
@@ -33,9 +35,9 @@ test('server side render', t => {
     );
   });
 
-  t.test('mirror name', t => {
-    const asProps = component({ name: 'props', render: greeting });
-    const asFn = component(function fn(args) {
+  t.test('mirror name', function (t) {
+    var asProps = component({ name: 'props', render: greeting });
+    var asFn = component(function fn(args) {
       return greeting.apply(this, args);
     });
 

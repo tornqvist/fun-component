@@ -1,4 +1,5 @@
 /* globals mapboxgl */
+/* eslint-env es6 */
 
 const html = require('bel');
 const morph = require('nanomorph');

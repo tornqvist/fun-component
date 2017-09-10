@@ -1,11 +1,13 @@
-const html = require('bel');
-const test = require('tape');
-const component = require('../');
+/* eslint-env es6 */
 
-test('browser', t => {
-  t.test('render', t => {
-    const asFn = component(greeting);
-    const asProps = component({ render: greeting });
+var html = require('bel');
+var test = require('tape');
+var component = require('../');
+
+test('browser', function (t) {
+  t.test('render', function (t) {
+    var asFn = component(greeting);
+    var asProps = component({ render: greeting });
 
     t.plan(2);
     t.equal(
@@ -20,25 +22,25 @@ test('browser', t => {
     );
   });
 
-  t.test('lifecycle methods', t => {
-    const state = {
+  t.test('lifecycle methods', function (t) {
+    var state = {
       load: 0,
       unload: 0,
       update: 0,
       beforerender: 0,
       afterupdate: 0
     };
-    const render = component({
-      load,
-      unload,
-      update,
-      beforerender,
-      afterupdate,
+    var render = component({
+      load: load,
+      unload: unload,
+      update: update,
+      beforerender: beforerender,
+      afterupdate: afterupdate,
       render: greeting
     });
 
-    const node = render('world');
-    const container = createContainer(node);
+    var node = render('world');
+    var container = createContainer(node);
 
     function load(element, str) {
       state.load += 1;
@@ -58,11 +60,11 @@ test('browser', t => {
       }, 'all lifecycle hooks fired');
       t.end();
     }
-    function update(element, [str], [prev]) {
+    function update(element, args, prev) {
       state.update += 1;
       t.equal(element, node, 'update recived element');
-      t.equal(str, 'Jane', 'arguments forwarded to update');
-      t.equal(prev, 'world', 'prev arguments forwarded to update');
+      t.equal(args[0], 'Jane', 'arguments forwarded to update');
+      t.equal(prev[0], 'world', 'prev arguments forwarded to update');
       return true;
     }
     function beforerender(element, str) {
@@ -78,15 +80,15 @@ test('browser', t => {
     }
   });
 
-  t.test('cache', t => {
-    let count = 0;
-    const render = component({
+  t.test('cache', function (t) {
+    var count = 0;
+    var render = component({
       cache: true,
-      update(element) {
+      update: function (element) {
         element.firstElementChild.innerHTML = 'Hello Jane!';
         return false;
       },
-      render() {
+      render: function() {
         count += 1;
         if (count > 1) { t.fail('render called twice'); }
         return greeting.apply(this, arguments);
@@ -95,11 +97,11 @@ test('browser', t => {
 
     t.plan(2);
 
-    const element = render('world');
-    const container = createContainer(element);
-    requestAnimationFrame(() => {
+    var element = render('world');
+    var container = createContainer(element);
+    requestAnimationFrame(function () {
       container.removeChild(element);
-      requestAnimationFrame(() => {
+      requestAnimationFrame(function () {
         container.appendChild(render('Jane'));
         t.equal(
           element,
@@ -115,8 +117,8 @@ test('browser', t => {
     });
   });
 
-  t.test('rerender exposed on self', t => {
-    const props = { render: greeting };
+  t.test('rerender exposed on self', function (t) {
+    var props = { render: greeting };
 
     component(props);
 
@@ -124,24 +126,25 @@ test('browser', t => {
     t.equal(typeof props.rerender, 'function', 'rerender attached to props');
   });
 
-  t.test('log methods exposed on self', t => {
-    const methods = [ 'trace', 'debug', 'info', 'warn', 'error', 'fatal' ];
-    const props = { render };
+  t.test('log methods exposed on self', function (t) {
+    var methods = [ 'trace', 'debug', 'info', 'warn', 'error', 'fatal' ];
+    var props = { render: render };
 
     t.plan(methods.length + 1);
 
     component(props)('world');
 
     function render() {
-      t.equal(typeof this.log, 'object', 'has log object on self');
-      methods.map(key => {
+      var self = this;
+      t.equal(typeof self.log, 'object', 'has log object on self');
+      methods.map(function (key) {
         t.equal(
-          typeof this.log[key],
+          typeof self.log[key],
           'function',
-          `${ key } attached to self.log`
+          key + ' attached to self.log'
         );
       });
-      return greeting.apply(this, arguments);
+      return greeting.apply(self, arguments);
     }
   });
 });
@@ -159,7 +162,7 @@ function makeID() {
 }
 
 function createContainer(child) {
-  const container = document.createElement('div');
+  var container = document.createElement('div');
   container.id = makeID();
   document.body.appendChild(container);
   if (child) {
