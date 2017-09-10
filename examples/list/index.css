@@ -1,0 +1,99 @@
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html {
+  height: 100%;
+}
+
+.App {
+  height: 100%;
+  padding: 0 5vw;
+  color: #222;
+  font-size: 16px;
+  font-family: monospace;
+}
+
+.List {
+  width: 100%;
+  max-width: 600px;
+  padding: 2rem 0;
+  margin: 0 auto;
+  position: relative;
+}
+
+.List-item {
+  line-height: 2em;
+  text-align: center;
+}
+
+.List-item.in-transition {
+  transition: transform 800ms ease-in-out;
+}
+
+.Button {
+  width: 100%;
+  margin-bottom: 1rem;
+  padding: 0.5em 2.5em;
+  border: 2px solid #222;
+
+  position: relative;
+
+  color: #222;
+  font-size: 16px;
+  outline: none;
+  font-family: inherit;
+  text-transform: uppercase;
+  background: transparent;
+  border-radius: 0;
+
+  transition: padding-right 200ms linear;
+}
+
+.Button::after {
+  content: "";
+  width: 0;
+  height: 0;
+  border: 0.35em solid transparent;
+
+  position: absolute;
+  top: 50%;
+  right: 0.75em;
+
+  transform: translateY(-25%);
+  transition: transform 200ms linear;
+}
+
+.Button.is-active::after {
+  border-color: #fff transparent transparent;
+}
+
+.Button.is-active.is-reversed::after {
+  transform: translateY(-75%) rotate(180deg);
+}
+
+.Button.is-active {
+  color: #fff;
+  background-color: #222;
+}
+
+.Text {
+  max-width: 600px;
+  margin: 2.5rem auto 1rem;
+  position: relative;
+  line-height: 1.4;
+}
+
+.Text * {
+  margin: 1em 0;
+}
+
+.Text h1 {
+  text-align: center;
+}
+
+.Text a {
+  white-space: nowrap;
+}

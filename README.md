@@ -37,6 +37,9 @@ For example implementations, see [/examples](/examples). Either spin them up loc
 - Mapbox (using the `cache` option)
   - `npm run example:mapbox`
   - https://fun-component-mapbox.now.sh
+- List (using afterreorder to animate reordering)
+  - `npm run example:list`
+  - https://fun-component-list.now.sh
 
 ## API
 
@@ -60,7 +63,7 @@ Create a new component. Either takes a function as only argument or an object wi
 
 In the process of creating a component some entries are added on to the props for internal usage.
 
-- `log {object}` an instance of [nanologger](https://github.com/choojs/nanologger)  is exposed on to the props for debugging purposes
+- `log {object}` an instance of [nanologger](https://github.com/choojs/nanologger)  is exposed on the props for debugging purposes, see [example](/examples/mapbox/index.js#L107)
 - `rerender {function}` run `render` with the last set up supplied arguments, bypassing update
 
 ## See Also
@@ -72,6 +75,6 @@ In the process of creating a component some entries are added on to the props fo
 
 ## TODO
 
-- [ ] Add list example
+- [x] Add list example
 - [ ] Add rerender example
 - [ ] Add pure function example

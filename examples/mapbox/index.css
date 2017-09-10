@@ -89,6 +89,7 @@ html {
   padding: 0 5vw;
   margin: 0 auto;
   position: relative;
+  line-height: 1.4;
 }
 
 .Text * {
