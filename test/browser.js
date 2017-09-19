@@ -76,7 +76,7 @@ test('browser', function (t) {
       state.afterupdate += 1;
       t.equal(element, node, 'afterupdate recived element');
       t.equal(str, 'Jane', 'arguments forwarded to afterupdate');
-      container.removeChild(node);
+      requestAnimationFrame(() => container.removeChild(node));
     }
   });
 
