@@ -36,6 +36,7 @@ const rows = Object.keys(elements).map(key => elements[key]).map(props => {
 
       requestAnimationFrame(() => {
         element.addEventListener('transitionend', function ontransitionend() {
+          element.removeEventListener('transitionend', ontransitionend);
           element.classList.remove('in-transition');
         });
         element.classList.add('in-transition');

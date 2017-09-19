@@ -40,7 +40,7 @@
     "tape-run": "^3.0.0"
   },
   "dependencies": {
-    "nanocomponent": "^6.4.0",
+    "nanocomponent": "^6.4.2",
     "nanologger": "^1.3.0"
   }
 }
