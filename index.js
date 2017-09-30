@@ -1,194 +1,116 @@
+var assert = require('nanoassert');
 var nanologger = require('nanologger');
 var Nanocomponent = require('nanocomponent');
+
+var HOOKS = ['load', 'unload', 'beforerender', 'afterupdate', 'afterreorder'];
+
+module.exports = component;
 
 /**
  * Lifecycle hooks for a statefull component.
  *
- * @param {any} props Function or Object
- * @param {string} props.name Component name, used for debugging
- * @param {boolean} props.cache Whether to save the element in-between mounts
- * @param {function} props.render Create element
- * @param {function} props.update Determine whether component should re-render
- * @param {function} props.load Called after component is mounted in DOM
- * @param {function} props.unload Called after component is removed from DOM
- * @param {function} props.beforerender Called before component is added to DOM
- * @param {function} props.afterupdate Called after update returns true
- * @param {function} props.afterreorder Called after component is reordered
+ * @param {any} name Explicit name or render function
+ * @param {function} [render] Should return an HTMLElement
  * @returns {function} Renders component
- *
- * @example
- * component(function user(user) {
- *   return html`<a href="/users/${ user._id }`>${ user.name }</a>`;
- * })
- *
- * @example
- * component({
- *   name: 'map',
- *   update(element, [coordinates], [prev]) {
- *     if (coordinates.lng !== prev.lng || coordinates.lat !== prev.lat) {
- *       this.map.setCenter([coordinates.lng, coordinates.lat]);
- *     }
- *     return false;
- *   },
- *   load(element, coordinates) {
- *     this.map = new mapboxgl.Map({
- *       container: element,
- *       center: [coordinates.lng, coordinates.lat],
- *     });
- *   },
- *   unload() {
- *     this.map.destroy();
- *   },
- *   render(coordinates) {
- *     return html`<div class="Map"></div>`;
- *   }
- * })
- *
- * @example
- * function createComponent() {
- *   let isExpanded = false;
- *   const expander = { name: 'expander', render };
- *
- *   function toggle() {
- *     isExpanded = !isExpanded;
- *     expander.rerender();
- *   }
- *
- *   function render() {
- *     return html`
- *       <button onclick=${ toggle }>Expand</button>
- *       <p style="display: ${ isExpanded ? 'block' : 'none' };">
- *         Lorem ipsum dolor sit…
- *       </p>
- *     `;
- *   }
- *
- *   return component(expander);
- * }
  */
 
-module.exports = function component(props) {
-  var _args, _element, _render;
+function component(name, render) {
+  var _args, _update;
 
   /**
-   * Determine what to use for `createElement`
+   * Derrive the render function to use for `createElement`
    */
 
-  if (typeof props === 'function') {
-    _render = props;
-  } else if (typeof props === 'object' && props.render) {
-    _render = props.render;
-  } else {
-    throw (new Error('Component must be provided with a render function'));
+  if (typeof name === 'function') {
+    render = name;
+    name = render.name || 'fun-component';
   }
 
-  /**
-   * Create a logger for internal usage
-   */
-
-  var log = nanologger(props.name);
+  assert(render, 'Component must be provided with a render function');
 
   function Component() {
-    Nanocomponent.call(this, props.name);
-
-    log.debug('create');
-
-    var self = this;
-
-    // Expose `logger` on props
-    props.log = log;
-
-    // Expose `rerender` on props
-    props.rerender = function () {
-      self.rerender();
-    };
+    Nanocomponent.call(this, name);
+    this.debug('create');
   }
-
-  /**
-   * Extend Nanocomponent and proxy lifecycle methods with latest arguments
-   */
 
   Component.prototype = Object.create(Nanocomponent.prototype);
 
-  if (props.beforerender) {
-    Component.prototype.beforerender = function (element) {
-      props.beforerender.apply(props, [ element ].concat(_args));
-    };
-  }
+  /**
+   * Add on an extra layer to the prototype with an instnace of nanologger
+   */
 
-  if (props.afterupdate) {
-    Component.prototype.afterupdate = function (element) {
-      props.afterupdate.apply(props, [ element ].concat(_args));
-    };
-  }
+  Object.assign(Component.prototype, nanologger(name));
 
-  if (props.afterreorder) {
-    Component.prototype.afterreorder = function (element) {
-      props.afterreorder.apply(props, [ element ].concat(_args));
-    };
-  }
+  /**
+   * Default to shallow diff and capture arguments on update
+   */
 
   Component.prototype.update = function () {
     var result;
     var args = Array.prototype.slice.call(arguments);
 
-    if (props.update) {
-      result = props.update.call(props, this.element, args, _args);
+    if (_update) {
+      result = _update.call(this, this.element, args, _args);
     } else {
       result = diff(args, _args);
     }
 
     if (result) {
-      log.debug('update', args);
+      this.debug('update', args);
     }
 
-    // Save an internal reference to last arguments
     _args = args;
 
     return result;
   };
 
+  /**
+   * Capture arguments on render
+   */
+
   Component.prototype.createElement = function() {
     var args = Array.prototype.slice.call(arguments);
 
-    if (props.cache && !this._loaded && _element) {
-      if (props.update) {
-        // Just try and update cached elements
-        props.update.call(props, _element, args, _args);
-        if (this.afterupdate) {
-          this.afterupdate(_element);
-        }
-      }
-      return _element;
-    } else if (!this.element) {
-      log.debug('render', args);
+    if (!this.element) {
+      this.debug('render', args);
     }
 
-    // Save an internal reference to last arguments
     _args = args;
 
-    return _render.apply(props, args);
-  };
-
-  Component.prototype.load = function(element) {
-    _element = element;
-    if (props.load) {
-      props.load.apply(props, [ element ].concat(_args));
-    }
-  };
-
-  Component.prototype.unload = function() {
-    if (!props.cache) {
-      _element = null;
-    }
-
-    if (props.unload) {
-      props.unload.apply(props, _args);
-    }
+    return render.apply(this, args);
   };
 
   /**
-   * Create an instance of the newly configured component
+   * Pluck out lifecycle hooks from element and attach to self
+   */
+
+  Component.prototype._handleRender = function(args) {
+    var self = this;
+    var el = Nanocomponent.prototype._handleRender.call(this, args);
+
+    for (var i = 0; i < HOOKS.length; i += 1) {
+      var hook = HOOKS[i];
+
+      if (el.hasOwnProperty('on' + hook)) {
+        this[hook] = function () {
+          this.debug(hook, _args);
+          el['on' + hook].apply(self, Array.prototype.concat.call(arguments, _args));
+        };
+
+        el['on' + hook] = null;
+      }
+    }
+
+    if (el.hasOwnProperty('onupdate')) {
+      _update = el.onupdate;
+      el.onupdate = null;
+    }
+
+    return el;
+  };
+
+  /**
+   * Create an instance of the new component
    */
 
   var component = new Component();
@@ -197,24 +119,24 @@ module.exports = function component(props) {
    * Create a middleman render method
    */
 
-  var render = function () {
+  function renderer() {
     var args = Array.prototype.slice.call(arguments);
     return component.render.apply(component, args);
-  };
+  }
 
   /**
    * Overwrite function name with the original name
    */
 
-  Object.defineProperty(render, 'name', { writable: true });
-  render.name = props.name;
+  Object.defineProperty(renderer, 'name', { writable: true });
+  renderer.name = name;
 
   /**
    * Expose just the wrapper function
    */
 
-  return render;
-};
+  return renderer;
+}
 
 /**
  * Simple shallow diff of two sets of arguments

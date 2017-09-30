@@ -3,78 +3,139 @@
 [![npm version](https://img.shields.io/npm/v/fun-component.svg?)](https://npmjs.org/package/fun-component) [![build status](https://img.shields.io/travis/tornqvist/fun-component/master.svg?style=flat-square)](https://travis-ci.org/tornqvist/fun-component)
 [![downloads](http://img.shields.io/npm/dm/fun-component.svg?style=flat-square)](https://npmjs.org/package/fun-component)
 
-A component wrapper library that exposes a single function that renders and updates a DOM node. Built on [nanocomponent](https://github.com/choojs/nanocomponent).
+A pure functional approach to authoring HTML components. Really just syntactic suggar on top of [nanocomponent](https://github.com/choojs/nanocomponent).
 
 ## Usage
 
-```javascript
-const html = require('bel');
-const component = require('fun-component');
+The most straight forward usage is to pass in a function and have the default shallow diff figure out whether to rerender the component on consecutive calls.
 
-module.exports = component({
-  name: 'my-component',
-  update(element, [props], [prev]) {
-    return props.color !== prev.color;
-  },
-  load(element, props) {
-    this.log.trace(`mounted ${ this.name }: `, element);
-  },
-  unload(element, props) {
-    this.log.trace(`unmounted ${ this.name }`);
-  },
-  render(props) {
-    html`
-      <h1 style="color:${ props.color }">Hello world!</h1>
-    `;
+```javascript
+component(function user(user) {
+  return html`<a href="/users/${ user._id }`>${ user.name }</a>`;
+})
+```
+
+Here's an example of how you might create a stateful component.
+
+```javascript
+component(function expander() {
+  let isExpanded = false;
+  const toggle = () => {
+    isExpanded = !isExpanded;
+    this.rerender();
+  }
+
+  return html`
+    <button onclick=${ toggle }>Expand</button>
+    <p style="display: ${ isExpanded ? 'block' : 'none' };">
+      Lorem ipsum dolor sit…
+    </p>
+  `;
+});
+```
+
+## API
+
+### `component(function)`
+### `component(string, function)`
+
+Create a new component. Either takes a function as an only argument or a name and a function. If no name is supplied the name is derrived from the function's `name` property. The name is used for logging using [nanologger](https://github.com/choojs/nanologger), enable it through `localStorage.setItem('logLevel', 'debug|info|warn|error|fatal')`.
+
+The underlying nanocomponent and nanologger instances are exposed on the calling context (`this`) in all lifecycle hooks and the render function iteself.
+
+### Lifecycle hooks
+
+All the lifecycle hooks of nanocomponent are supported, i.e. [`beforerender`](https://github.com/choojs/nanocomponent#nanocomponentprototypebeforerenderel), [`load`](https://github.com/choojs/nanocomponent#nanocomponentprototypeloadel), [`unload`](https://github.com/choojs/nanocomponent#nanocomponentprototypeunloadel), [`afterupdate`](https://github.com/choojs/nanocomponent#nanocomponentprototypeafterupdateel), and [`afterreorder`](https://github.com/choojs/nanocomponent#nanocomponentprototypeafterreorderel). Lifecycle hooks are declared on the element itself and are forwarded to the underlying nanocomponent instance.
+
+```javascript
+component(function hooks(name) {
+  return html`
+    <div onupdate=${ update } onbeforerender=${ beforerender } onload=${ load } onunload=${ unload } onafterupdate=${ afterupdate } onafterreorder=${ afterreorder }>
+      Hello ${ name }!
+    </div>
+  `;
+});
+
+function update(el, [name], [prev]) {
+  return name !== prev;
+}
+
+function beforerender(el, name) {
+  this.debug(`${ name } about to render`);
+}
+
+function load(el, name) {
+  this.debug(`${ name } mounted in DOM`);
+}
+
+function unload(name) {
+  this.debug(`${ name } removed from DOM`);
+}
+
+function afterupdate(el, name) {
+  this.debug(`${ name } updated`);
+}
+
+function afterreorder(el, name) {
+  this.debug(`${ name }`)
+}
+```
+
+## Caching
+
+Previous versions of fun-component had caching built in. Since this is easy enough to achieve in userland it was removed from core in version 3.
+
+```javascript
+component('kewl-map', function (coordinates) {
+  let map, cached;
+
+  if (!this._loaded && cached) {
+    return cached;
+  }
+
+  return html`
+    <div class="Map" onupdate=${ update } onload=${ load }>
+    </div>
+  `;
+
+  function update(element, [coordinates], [prev]) {
+    if (coordinates.lng !== prev.lng || coordinates.lat !== prev.lat) {
+      map.setCenter([coordinates.lng, coordinates.lat]);
+    }
+    return false;
+  }
+
+  function load(element, coordinates) {
+    if (cached) {
+      map.setCenter([coordinates.lng, coordinates.lat]).resize();
+    } else {
+      cached = element;
+      map = new mapboxgl.Map({
+        container: element,
+        center: [coordinates.lng, coordinates.lat],
+      });
+    }
   }
 });
 ```
 
-### Examples
+## Examples
 
 For example implementations, see [/examples](/examples). Either spin them up locally or visit the link.
 
-- Mapbox (using the `cache` option)
+- Mapbox (using the above caching pattern)
   - `npm run example:mapbox`
   - https://fun-component-mapbox.now.sh
-- List (using afterreorder to animate reordering)
+- List (creating unique instances with `use`)
   - `npm run example:list`
   - https://fun-component-list.now.sh
 
-## API
-
-### `component(function|object)`
-
-Create a new component. Either takes a function as only argument or an object with a `render` method on it.
-
-### Options
-
-- `name {string}` Component name, used for debugging
-- `cache {boolean}` Whether to save the element in-between mounts *Default: false*
-- `render {function}` Create element
-- `update {function}` Determine whether component should re-render *Default: shallow diff*
-- `load {function}` Called *after* component is mounted in DOM
-- `unload {function}` Called after component is removed from DOM
-- `beforerender {function}` Called *before* component is added to DOM
-- `afterupdate {function}` Called after update returns true
-- `afterreorder {function}` Called after component is reordered
-
-### Methods
-
-In the process of creating a component some entries are added on to the props for internal usage.
-
-- `log {object}` an instance of [nanologger](https://github.com/choojs/nanologger)  is exposed on the props for debugging purposes, see [example](/examples/mapbox/index.js#L107)
-- `rerender {function}` run `render` with the last set up supplied arguments, bypassing update
-
 ## See Also
+
 - [yoshuawuyts/microcomponent](https://github.com/yoshuawuyts/microcomponent)
+- [jongacnik/component-box](https://github.com/jongacnik/component-box)
 - [choojs/nanocomponent](https://github.com/choojs/nanocomponent)
 
 ## License
+
 [MIT](https://tldrlegal.com/license/mit-license)
-
-## TODO
-
-- [x] Add list example
-- [ ] Add rerender example
-- [ ] Add pure function example
