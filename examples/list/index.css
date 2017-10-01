@@ -79,6 +79,10 @@ html {
   background-color: #222;
 }
 
+.Button:disabled {
+  opacity: 0.6;
+}
+
 .Text {
   max-width: 600px;
   margin: 2.5rem auto 1rem;

@@ -6,66 +6,49 @@ const morph = require('nanomorph');
 const component = require(process.env.FUN_COMPONENT);
 
 /**
- * Create a list of periodic table elements as components
+ * Generic element component
  */
 
-const rows = Object.keys(elements).map(key => elements[key]).map(props => {
-  const render = component({
-    name: props.name,
-    position: null,
+const element = component(function element(props) {
+  return html`
+    <tr class="List-item" onupdate=${ update }>
+      <td class="List-data">${ props.atomicNumber }</td>
+      <td class="List-data">${ props.name } (${ props.symbol })</td>
+      <td class="List-data">${ props.yearDiscovered }</td>
+    </tr>
+  `;
+});
 
-    /**
-     * Save element offset of where it first appeared in the document
-     * @param {HTMLElement} element
-     */
+/**
+ * Freeze element in position and translate into its new position
+ * @param {HTMLElement} element
+ * @return {boolean} Prevent component from re-rendering
+ */
 
-    load(element) {
-      this.offset = element.offsetTop;
-    },
+function update(element, [, index, done], [, prev]) {
+  if (index === prev) { return false; }
 
-    /**
-     * Translate element back to it's last known position then let it transition
-     * into its new position
-     * @param {HTMLElement} element
-     */
+  const from = element.offsetTop;
 
-    afterreorder(element) {
-      const offset = element.offsetTop;
-      element.style.transform = `translateY(${ this.offset - offset }px)`;
-      this.offset = offset;
+  requestAnimationFrame(() => {
+    const to = element.offsetTop;
 
-      requestAnimationFrame(() => {
-        element.addEventListener('transitionend', function ontransitionend() {
-          element.removeEventListener('transitionend', ontransitionend);
-          element.classList.remove('in-transition');
-        });
-        element.classList.add('in-transition');
-        element.style.transform = null;
+    element.style.transform = `translateY(${ from - to }px)`;
+
+    requestAnimationFrame(() => {
+      element.addEventListener('transitionend', function ontransitionend() {
+        element.removeEventListener('transitionend', ontransitionend);
+        element.classList.remove('in-transition');
+        done();
       });
-    },
 
-    /**
-     * Render some element data
-     * @returns {HTMLElement}
-     */
-
-    render() {
-      return html`
-        <tr class="List-item">
-          <td class="List-data">${ props.atomicNumber }</td>
-          <td class="List-data">${ props.name } (${ props.symbol })</td>
-          <td class="List-data">${ props.yearDiscovered }</td>
-        </tr>
-      `;
-    }
+      element.classList.add('in-transition');
+      element.style.transform = null;
+    });
   });
 
-  /**
-   * Mash up element properties with a render method
-   */
-
-  return Object.assign({ render }, props);
-});
+  return false;
+}
 
 /**
  * Mount application on document body
@@ -80,22 +63,13 @@ morph(document.body, view());
  * @returns {HTMLElement}
  */
 
-function view(order = byNumber, reverse = false) {
-
-  /**
-   * Rerender application using given sort function
-   */
-
-  const sort = next => () => morph(
-    document.body,
-    view(next, (next === order && !reverse))
-  );
+function view(order = byNumber, reverse = false, inTransition = false) {
 
   /**
    * Create a new list of sorted rows
    */
 
-  const items = rows.slice().sort(order);
+  const items = Object.values(elements).sort(order);
 
   if (reverse) {
     items.reverse();
@@ -110,17 +84,38 @@ function view(order = byNumber, reverse = false) {
       <table class="List">
         <thead>
           <tr>
-            <th><button class="Button ${ order === byNumber ? 'is-active' : '' } ${ reverse ? 'is-reversed' : '' }" onclick=${ sort(byNumber) }>Number</button></th>
-            <th><button class="Button ${ order === byName ? 'is-active' : '' } ${ reverse ? 'is-reversed' : '' }" onclick=${ sort(byName) }>Name</button></th>
-            <th><button class="Button ${ order === byDate ? 'is-active' : '' } ${ reverse ? 'is-reversed' : '' }" onclick=${ sort(byDate) }>Year Discovered</button></th>
+            <th><button disabled=${ inTransition } class="Button ${ order === byNumber ? 'is-active' : '' } ${ reverse ? 'is-reversed' : '' }" onclick=${ sort(byNumber) }>Number</button></th>
+            <th><button disabled=${ inTransition } class="Button ${ order === byName ? 'is-active' : '' } ${ reverse ? 'is-reversed' : '' }" onclick=${ sort(byName) }>Name</button></th>
+            <th><button disabled=${ inTransition } class="Button ${ order === byDate ? 'is-active' : '' } ${ reverse ? 'is-reversed' : '' }" onclick=${ sort(byDate) }>Year Discovered</button></th>
           </tr>
         </thead>
         <tbody>
-          ${ items.map(props => props.render()) }
+          ${ items.map((props, index) => element.use(props.name.toLowerCase(), props, index, done)) }
         </tbody>
       </table>
     </body>
   `;
+
+  /**
+   * Rerender application using given sort function
+   */
+
+  function sort(next) {
+    return function () {
+      morph(document.body, view(next, (next === order && !reverse), true));
+    };
+  }
+
+  /**
+   * Rerender application with active buttons
+   */
+
+  function done() {
+    if (inTransition) {
+      inTransition = false;
+      morph(document.body, view(order, reverse, inTransition));
+    }
+  }
 }
 
 function byNumber(a, b) {

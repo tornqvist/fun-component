@@ -1,5 +1,5 @@
 var assert = require('nanoassert');
-var nanologger = require('nanologger');
+var Nanologger = require('nanologger');
 var Nanocomponent = require('nanocomponent');
 
 var HOOKS = ['load', 'unload', 'beforerender', 'afterupdate', 'afterreorder'];
@@ -10,12 +10,11 @@ module.exports = component;
  * Lifecycle hooks for a statefull component.
  *
  * @param {any} name Explicit name or render function
- * @param {function} [render] Should return an HTMLElement
+ * @param {function} [render] Create an HTMLElement
  * @returns {function} Renders component
  */
 
 function component(name, render) {
-  var _args, _update;
 
   /**
    * Derrive the render function to use for `createElement`
@@ -29,17 +28,18 @@ function component(name, render) {
   assert(render, 'Component must be provided with a render function');
 
   function Component() {
-    Nanocomponent.call(this, name);
+    Nanocomponent.call(this, arguments[0] || name);
+    this.cache = {};
     this.debug('create');
   }
 
-  Component.prototype = Object.create(Nanocomponent.prototype);
-
   /**
-   * Add on an extra layer to the prototype with an instnace of nanologger
+   * Mixin both Nanocomponent and Nanologger on Component prototype tree
    */
 
-  Object.assign(Component.prototype, nanologger(name));
+  Component.prototype = Object.create(Nanocomponent.prototype);
+  Object.assign(Component.prototype, new Nanologger(name), Nanologger.prototype);
+  Component.prototype.constructor = Component;
 
   /**
    * Default to shallow diff and capture arguments on update
@@ -49,17 +49,17 @@ function component(name, render) {
     var result;
     var args = Array.prototype.slice.call(arguments);
 
-    if (_update) {
-      result = _update.call(this, this.element, args, _args);
+    if (this._update) {
+      result = this._update.call(this, this.element, args, this._arguments);
     } else {
-      result = diff(args, _args);
+      result = diff(args, this._arguments);
     }
 
     if (result) {
       this.debug('update', args);
     }
 
-    _args = args;
+    this._arguments = args;
 
     return result;
   };
@@ -75,8 +75,6 @@ function component(name, render) {
       this.debug('render', args);
     }
 
-    _args = args;
-
     return render.apply(this, args);
   };
 
@@ -88,21 +86,22 @@ function component(name, render) {
     var self = this;
     var el = Nanocomponent.prototype._handleRender.call(this, args);
 
-    for (var i = 0; i < HOOKS.length; i += 1) {
-      var hook = HOOKS[i];
+    HOOKS.forEach(function (key) {
+      var hook = el['on' + key];
 
-      if (el.hasOwnProperty('on' + hook)) {
-        this[hook] = function () {
-          this.debug(hook, _args);
-          el['on' + hook].apply(self, Array.prototype.concat.call(arguments, _args));
+      if (hook) {
+        self[key] = function () {
+          var args = Array.prototype.slice.call(arguments);
+          self.debug(key, self._arguments);
+          hook.apply(self, args.concat(self._arguments));
         };
 
         el['on' + hook] = null;
       }
-    }
+    });
 
-    if (el.hasOwnProperty('onupdate')) {
-      _update = el.onupdate;
+    if (el.onupdate) {
+      this._update = el.onupdate;
       el.onupdate = null;
     }
 
@@ -123,6 +122,38 @@ function component(name, render) {
     var args = Array.prototype.slice.call(arguments);
     return component.render.apply(component, args);
   }
+
+  /**
+   * Expose API for handling child instances on public renderer function
+   */
+
+  renderer.create = function create(key) {
+    assert(key, 'Component instance key is required');
+    assert(!component.cache[key], 'Key ' + key + ' already exist');
+    component.cache[key] = new Component([name, key].join('-'));
+    return component.cache[key];
+  };
+
+  renderer.get = function get(key) {
+    return component.cache[key];
+  };
+
+  renderer.unset = function unset(key) {
+    assert(component.cache[key], 'Cannot find ' + key + ' in ' + name);
+    delete component.cache[key];
+  };
+
+  renderer.use = function use() {
+    var key = Array.prototype.slice.call(arguments, 0, 1);
+    var args = Array.prototype.slice.call(arguments, 1);
+    var child = renderer.get(key);
+
+    if (!child) {
+      child = renderer.create(key);
+    }
+
+    return child.render.apply(child, args);
+  };
 
   /**
    * Overwrite function name with the original name
