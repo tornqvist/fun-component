@@ -32,93 +32,93 @@ const mapbox = (function () {
       <div class="Map-container" onload=${ load } onunload=${ unload } onupdate=${ update }>
       </div>
     `;
-
-    /**
-     * Determine whether to update map location and place popup
-     * @param {HTMLElement} element
-     * @param {array} args List of latest arguments used to render component
-     * @param {array} prev List of previous arguments used to render component
-     * @returns {boolean} Always prevent component from rerendering
-     */
-
-    function update(element, args, prev) {
-      if (!map) { return false; }
-
-      if (args.reduce((changed, arg, i) => changed || arg !== prev[i], false)) {
-        const [ lng, lat, positioned ] = args;
-
-        map.panTo([lng, lat]);
-
-        if (positioned) {
-          if (!prev[2]) { this.info('Position found'); }
-          popup
-            .setLngLat([lng, lat])
-            .setText('You are here')
-            .addTo(map);
-        } else if (popup.isOpen()) {
-          popup.remove();
-        }
-      }
-
-      return false;
-    }
-
-    /**
-     * If the map hasn't been initialized already, load Mapbox and create map
-     * @param {HTMLElement} element
-     * @param {number} lng
-     * @param {number} lat
-     * @param {boolean} positioned
-     * @param {function} loading
-     */
-
-    function load(element, lng, lat, positioned, loading) {
-      cached = element;
-
-      if (map) {
-        map.resize();
-      } else {
-        const script = html`<script src="${ MAPBOX_URL }"></script>`;
-
-        loading(true);
-
-        script.onload = () => {
-          this.info('Mapbox script loaded');
-
-          mapboxgl.accessToken = MAPBOX_TOKEN;
-          map = new mapboxgl.Map({
-            container: element,
-            center: [lng, lat],
-            zoom: 11,
-            style: 'mapbox://styles/mapbox/streets-v9'
-          });
-
-          popup = new mapboxgl.Popup({
-            closeOnClick: false,
-            closeButton: false
-          });
-
-          map.on('load', () => {
-            this.info('Mapbox tiles loaded');
-            loading(false);
-          });
-        };
-
-        document.head.appendChild(script);
-      }
-    }
-
-    /**
-     * Remove the popup when unmounting the map
-     */
-
-    function unload() {
-      if (popup.isOpen()) {
-        popup.remove();
-        this.info('Popup removed');
-      }
-    }
   });
+
+  /**
+   * Determine whether to update map location and place popup
+   * @param {HTMLElement} element
+   * @param {array} args List of latest arguments used to render component
+   * @param {array} prev List of previous arguments used to render component
+   * @returns {boolean} Always prevent component from rerendering
+   */
+
+  function update(element, args, prev) {
+    if (!map) { return false; }
+
+    if (args.reduce((changed, arg, i) => changed || arg !== prev[i], false)) {
+      const [ lng, lat, positioned ] = args;
+
+      map.panTo([lng, lat]);
+
+      if (positioned) {
+        if (!prev[2]) { this.info('Position found'); }
+        popup
+          .setLngLat([lng, lat])
+          .setText('You are here')
+          .addTo(map);
+      } else if (popup.isOpen()) {
+        popup.remove();
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * If the map hasn't been initialized already, load Mapbox and create map
+   * @param {HTMLElement} element
+   * @param {number} lng
+   * @param {number} lat
+   * @param {boolean} positioned
+   * @param {function} loading
+   */
+
+  function load(element, lng, lat, positioned, loading) {
+    cached = element;
+
+    if (map) {
+      map.resize();
+    } else {
+      const script = html`<script src="${ MAPBOX_URL }"></script>`;
+
+      loading(true);
+
+      script.onload = () => {
+        this.info('Mapbox script loaded');
+
+        mapboxgl.accessToken = MAPBOX_TOKEN;
+        map = new mapboxgl.Map({
+          container: element,
+          center: [lng, lat],
+          zoom: 11,
+          style: 'mapbox://styles/mapbox/streets-v9'
+        });
+
+        popup = new mapboxgl.Popup({
+          closeOnClick: false,
+          closeButton: false
+        });
+
+        map.on('load', () => {
+          this.info('Mapbox tiles loaded');
+          loading(false);
+        });
+      };
+
+      document.head.appendChild(script);
+    }
+  }
+
+  /**
+   * Remove the popup when unmounting the map
+   */
+
+  function unload() {
+    if (popup.isOpen()) {
+      popup.remove();
+      this.info('Popup removed');
+    }
+  }
 }());
 
 const about = component(function page() {

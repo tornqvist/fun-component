@@ -48,13 +48,52 @@ function createExpandable(expanded = false) {
 ### `component(function)`
 ### `component(string, function)`
 
-Create a new component. Either takes a function as an only argument or a name and a function. If no name is supplied the name is derrived from the function's `name` property. The name is used for logging using [nanologger](https://github.com/choojs/nanologger), enable it through `localStorage.setItem('logLevel', 'debug|info|warn|error|fatal')`.
+Create a new component. Either takes a function as an only argument or a name and a function. Returns a function that renders the element. If no name is supplied the name is derrived from the function's `name` property. The name is used for logging using [nanologger](https://github.com/choojs/nanologger), enable it through `localStorage.setItem('logLevel', 'debug|info|warn|error|fatal')`.
 
 The underlying nanocomponent and nanologger instances are exposed on the calling context (`this`) in all lifecycle hooks and the render function iteself.
 
+#### `myComponent.create(string)`
+
+Create a named instance, a "subclass" if you will, of a component. Returns underlying nanocomponent.
+
+#### `myComponent.get(string)`
+
+Get component instance by name.
+
+#### `myComponent.use(string, [...arguments])`
+
+Render named component instance forwarding trailing arguments to render function. Returns element.
+
+<details>
+<summary>See example</summary>
+
+```javascript
+const article = component(function article(props) {
+  return html`
+    <article>
+      <img src="${ props.img }" alt="${ props.title }">
+      <h2>${ props.title }</h2>
+      <p>${ props.preamble }</p>
+      <a href="/articles/${ props.id }">Read more</a>
+    </article>
+  `
+})
+
+function list(articles) {
+  return html`
+    <main>
+      <h1>List of articles</h1>
+      ${ articles.map(props => article.use(props.id, props)) }
+    </main>
+  `
+}
+```
+
+</details>
+
 ### Lifecycle hooks
 
-All the lifecycle hooks of nanocomponent are supported, i.e. [`beforerender`](https://github.com/choojs/nanocomponent#nanocomponentprototypebeforerenderel), [`load`](https://github.com/choojs/nanocomponent#nanocomponentprototypeloadel), [`unload`](https://github.com/choojs/nanocomponent#nanocomponentprototypeunloadel), [`afterupdate`](https://github.com/choojs/nanocomponent#nanocomponentprototypeafterupdateel), and [`afterreorder`](https://github.com/choojs/nanocomponent#nanocomponentprototypeafterreorderel). Lifecycle hooks are declared on the element itself and are forwarded to the underlying nanocomponent instance.
+All the lifecycle hooks of nanocomponent are supported, i.e. [`beforerender`](https://github.com/choojs/nanocomponent#nanocomponentprototypebeforerenderel), [`load`](https://github.com/choojs/nanocomponent#nanocomponentprototypeloadel), [`unload`](https://github.com/choojs/nanocomponent#nanocomponentprototypeunloadel), [`afterupdate`](https://github.com/choojs/nanocomponent#nanocomponentprototypeafterupdateel), and [`afterreorder`](https://github.com/choojs/nanocomponent#nanocomponentprototypeafterreorderel). Lifecycle hooks are declared on the element itself (with an "on" prefix) and are forwarded to the underlying nanocomponent instance.
 
 <details>
 <summary>See example</summary>
@@ -97,7 +136,7 @@ function afterreorder(el, name) {
 
 ## Caching
 
-Previous versions of fun-component had caching built in. Since this is easy enough to achieve in userland it was removed from core in version 3.
+When working with 3rd party libraries you might not want to rerender the element after it has been removed from the DOM. Previous versions of fun-component had element caching built in. Since this is easy enough to achieve in userland it was removed from core in version 3.
 
 <details>
 <summary>See example</summary>
@@ -115,28 +154,26 @@ function createMap(name = 'map') {
       <div class="Map" onupdate=${ update } onload=${ load }>
       </div>
     `
-
-    function update(element, [coordinates], [prev]) {
-      if (coordinates.lng !== prev.lng || coordinates.lat !== prev.lat) {
-        map.setCenter([coordinates.lng, coordinates.lat])
-      }
-      return false
-    }
-
-    function load(element, coordinates) {
-      cached = element
-
-      if (cached) {
-        map.setCenter([coordinates.lng, coordinates.lat]).resize()
-      } else {
-        cached = element
-        map = new mapboxgl.Map({
-          container: element,
-          center: [coordinates.lng, coordinates.lat],
-        })
-      }
-    }
   })
+
+  function update(element, [coordinates], [prev]) {
+    if (coordinates.lng !== prev.lng || coordinates.lat !== prev.lat) {
+      map.setCenter([coordinates.lng, coordinates.lat])
+    }
+    return false
+  }
+
+  function load(element, coordinates) {
+    if (cached) {
+      map.setCenter([coordinates.lng, coordinates.lat]).resize()
+    } else {
+      cached = element
+      map = new mapboxgl.Map({
+        container: element,
+        center: [coordinates.lng, coordinates.lat],
+      })
+    }
+  }
 }
 ```
 
@@ -146,10 +183,10 @@ function createMap(name = 'map') {
 
 For example implementations, see [/examples](/examples). Either spin them up locally or visit the link.
 
-- Mapbox (using the above caching pattern)
+- Mapbox (using element caching)
   - `npm run example:mapbox`
   - https://fun-component-mapbox.now.sh
-- List (creating unique instances with `use`)
+- List (creating instances with `use`)
   - `npm run example:list`
   - https://fun-component-list.now.sh
 
