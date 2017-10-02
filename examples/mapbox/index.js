@@ -17,148 +17,109 @@ const INITIAL_STATE = {
 };
 
 /**
- * Create Mapbox container component
+ * Create Mapbox container component with scoped state
  */
 
-const map = component({
-  name: 'mapbox',
+const mapbox = (function () {
+  let map, cached, popup;
 
-  /**
-   * ==> This is where the magic happens! <==
-   * By setting cached to `true` we are telling fun-component to keep a
-   * reference to the element after it has been unmounted from the DOM so that
-   * it gets re-inserted the next time it renders and we won't have to
-   * initialize Mapbox and load all the tiles again.
-   */
+  return component(function mapbox() {
+    if (!this._loaded && cached) {
+      return cached;
+    }
 
-  cache: true,
+    return html`
+      <div class="Map-container" onload=${ load } onunload=${ unload } onupdate=${ update }>
+      </div>
+    `;
 
-  /**
-   * Initial component state stored on self
-   */
+    /**
+     * Determine whether to update map location and place popup
+     * @param {HTMLElement} element
+     * @param {array} args List of latest arguments used to render component
+     * @param {array} prev List of previous arguments used to render component
+     * @returns {boolean} Always prevent component from rerendering
+     */
 
-  map: null,
-  popup: null,
-  isMounted: false,
+    function update(element, args, prev) {
+      if (!map) { return false; }
 
-  /**
-   * Place popup on map at given coordinates
-   * @param {number} lng
-   * @param {number} lat
-   */
+      if (args.reduce((changed, arg, i) => changed || arg !== prev[i], false)) {
+        const [ lng, lat, positioned ] = args;
 
-  placePopup(lng, lat) {
-    const wasOpen = this.popup.isOpen();
+        map.panTo([lng, lat]);
 
-    this.popup
-      .setLngLat([lng, lat])
-      .setText('You are here')
-      .addTo(this.map);
+        if (positioned) {
+          if (!prev[2]) { this.info('Position found'); }
+          popup
+            .setLngLat([lng, lat])
+            .setText('You are here')
+            .addTo(map);
+        } else if (popup.isOpen()) {
+          popup.remove();
+        }
+      }
 
-    if (!wasOpen) { this.log.info('Popup added'); }
-  },
+      return false;
+    }
 
-  /**
-   * Determine whether to update map location and place popup
-   * @param {HTMLElement} element
-   * @param {array} args List of latest arguments used to render component
-   * @param {array} prev List of previous arguments used to render component
-   * @returns {boolean} Always prevent component from rerendering
-   */
+    /**
+     * If the map hasn't been initialized already, load Mapbox and create map
+     * @param {HTMLElement} element
+     * @param {number} lng
+     * @param {number} lat
+     * @param {boolean} positioned
+     * @param {function} loading
+     */
 
-  update(element, args, prev) {
-    if (!this.map) { return false; }
+    function load(element, lng, lat, positioned, loading) {
+      cached = element;
 
-    const data = args.slice(0, 3);
+      if (map) {
+        map.resize();
+      } else {
+        const script = html`<script src="${ MAPBOX_URL }"></script>`;
 
-    if (data.reduce((changed, arg, i) => changed || arg !== prev[i], false)) {
-      const [ lng, lat, positioned ] = args;
+        loading(true);
 
-      this.map.panTo([lng, lat]);
+        script.onload = () => {
+          this.info('Mapbox script loaded');
 
-      if (positioned && this.isMounted) {
-        this.placePopup(lng, lat);
-      } else if (this.popup.isOpen()) {
-        this.popup.remove();
+          mapboxgl.accessToken = MAPBOX_TOKEN;
+          map = new mapboxgl.Map({
+            container: element,
+            center: [lng, lat],
+            zoom: 11,
+            style: 'mapbox://styles/mapbox/streets-v9'
+          });
+
+          popup = new mapboxgl.Popup({
+            closeOnClick: false,
+            closeButton: false
+          });
+
+          map.on('load', () => {
+            this.info('Mapbox tiles loaded');
+            loading(false);
+          });
+        };
+
+        document.head.appendChild(script);
       }
     }
 
-    return false;
-  },
+    /**
+     * Remove the popup when unmounting the map
+     */
 
-  /**
-   * If the map hasn't been initialized already, load Mapbox and create map
-   * @param {HTMLElement} element
-   * @param {number} lng
-   * @param {number} lat
-   * @param {boolean} positioned
-   * @param {function} loading
-   */
-
-  load(element, lng, lat, positioned, loading) {
-    this.isMounted = true;
-
-    if (!this.map) {
-      const script = html`<script src="${ MAPBOX_URL }" onload=${ onload }></script>`;
-
-      loading(true);
-
-      script.onload = () => {
-        this.log.info('Mapbox script loaded');
-
-        mapboxgl.accessToken = MAPBOX_TOKEN;
-        this.map = new mapboxgl.Map({
-          container: element,
-          center: [lng, lat],
-          zoom: 11,
-          style: 'mapbox://styles/mapbox/streets-v9'
-        });
-
-        this.popup = new mapboxgl.Popup({
-          closeOnClick: false,
-          closeButton: false
-        });
-
-        this.map.on('load', () => {
-          this.log.info('Mapbox tiles loaded');
-          loading(false);
-          if (positioned) {
-            this.placePopup(lng, lat);
-          }
-        });
-      };
-
-      document.head.appendChild(script);
+    function unload() {
+      if (popup.isOpen()) {
+        popup.remove();
+        this.info('Popup removed');
+      }
     }
-  },
-
-  /**
-   * Remove the popup when unmounting the map
-   */
-
-  unload() {
-    this.isMounted = false;
-
-    if (this.popup.isOpen()) {
-      this.popup.remove();
-      this.log.info('Popup removed');
-    }
-  },
-
-  /**
-   * Create map container element
-   */
-
-  render() {
-    return html`<div class="Map-container"></div>`;
-  }
-});
-
-/**
- * A component can also just be a plain function.
- * As long as the arguments doesn't differ between renders, this view is cached
- * and won't execute upon rerenders.
- */
+  });
+}());
 
 const about = component(function page() {
   return html`
@@ -197,7 +158,7 @@ function view(state = {}) {
       </nav>
       ${ state.href === '/' ? html`
         <div class="Map">
-          ${ map(state.lng, state.lat, state.positioned, loading) }
+          ${ mapbox(state.lng, state.lat, state.positioned, loading) }
           <button disabled=${ state.isLoading } onclick=${ locate } class="Button">Where am I?</button>
         </div>
       ` : about() }
