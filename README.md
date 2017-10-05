@@ -129,7 +129,7 @@ function afterupdate(el, name) {
 }
 
 function afterreorder(el, name) {
-  this.debug(`${ name }`)
+  this.debug(`${ name } reordered`)
 }
 ```
 
@@ -137,7 +137,7 @@ function afterreorder(el, name) {
 
 ## Caching
 
-When working with 3rd party libraries you might not want to rerender the element after it has been removed from the DOM. Previous versions of fun-component had element caching built in. Since this is easy enough to achieve in userland it was removed from core in version 3.
+When working with 3rd party libraries you might *not* want to rerender the element after it has been removed from the DOM. Previous versions of fun-component had element caching built in. Since this is easy enough to achieve in userland it was removed from core in version 3.
 
 <details>
 <summary><strong>See example</strong></summary>
