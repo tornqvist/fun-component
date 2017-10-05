@@ -13,34 +13,31 @@ The most straight forward usage is to pass in a function and have the default sh
 const html = require('bel')
 const component = require('fun-component')
 
-component(function user(user) {
-  return html`<a href="/users/${ user._id }">${ user.name }</a>`
+const render = component(function user(props) {
+  return html`<a href="/users/${ props._id }">${ props.name }</a>`
 })
+
+document.body.appendChild(render({ id: 123, name: 'Jane Doe' }))
 ```
 
-Here's an example of how you might create a stateful component.
+A stateful component can issue a rerender with the next state using the underlying nanocomponent.
 
 ```javascript
 const html = require('bel')
 const component = require('fun-component')
 
-function createExpandable(expanded = false) {
-  let isExpanded = expanded
+const render = component(function expandable(expanded = false) {
+  const toggle = () => this.render(!expanded)
 
-  return component(function expandable() {
-    const toggle = () => {
-      isExpanded = !isExpanded
-      this.rerender()
-    }
+  return html`
+    <button onclick=${ toggle }>${ expanded ? 'Close' : 'Open' }</button>
+    <p style="display: ${ expanded ? 'block' : 'none' };">
+      Lorem ipsum dolor sit…
+    </p>
+  `
+})
 
-    return html`
-      <button onclick=${ toggle }>Expand</button>
-      <p style="display: ${ isExpanded ? 'block' : 'none' };">
-        Lorem ipsum dolor sit…
-      </p>
-    `
-  })
-}
+document.body.appendChild(render())
 ```
 
 ## API
@@ -50,19 +47,23 @@ function createExpandable(expanded = false) {
 
 Create a new component. Either takes a function as an only argument or a name and a function. Returns a function that renders the element. If no name is supplied the name is derrived from the function's `name` property. The name is used for logging using [nanologger](https://github.com/choojs/nanologger), enable it through `localStorage.setItem('logLevel', 'debug|info|warn|error|fatal')`.
 
-The underlying nanocomponent and nanologger instances are exposed on the calling context (`this`) in all lifecycle hooks and the render function iteself.
+The underlying nanocomponent and nanologger instances are exposed on the calling context (`this`) in all lifecycle hooks as well as the render function itself and can be accessed as such `this.rerender()` or `this.debug('hello there')`.
 
 #### `myComponent.create(string)`
 
-Create a named instance, a "subclass" if you will, of a component. Returns underlying nanocomponent.
+Create a named instance, a "subclass" if you will, of a component. Returns its underlying component instance.
 
 #### `myComponent.get(string)`
 
-Get component instance by name.
+Get component instance by name. If no name is supplied, base component is returned.
+
+#### `myComponent.delete(string)`
+
+Delete component instance by name.
 
 #### `myComponent.use(string, [...arguments])`
 
-Render named component instance forwarding trailing arguments to render function. Returns element.
+Render named component forwarding trailing arguments to render function. Returns element.
 
 <details>
 <summary>See example</summary>
@@ -79,11 +80,11 @@ const article = component(function article(props) {
   `
 })
 
-function list(articles) {
+function list(items) {
   return html`
     <main>
       <h1>List of articles</h1>
-      ${ articles.map(props => article.use(props.id, props)) }
+      ${ items.map(item => article.use(item.id, item)) }
     </main>
   `
 }
@@ -201,6 +202,10 @@ Not for you? If OOP is your thing, use [nanocomponent](https://github.com/choojs
 - [yoshuawuyts/microcomponent](https://github.com/yoshuawuyts/microcomponent)
 - [jongacnik/component-box](https://github.com/jongacnik/component-box)
 - [choojs/nanocomponent](https://github.com/choojs/nanocomponent)
+
+## Todo
+
+- [ ] Add statefull example
 
 ## License
 

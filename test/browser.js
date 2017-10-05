@@ -6,19 +6,13 @@ var component = require('../');
 
 test('browser', function (t) {
   t.test('render', function (t) {
-    var asFn = component(greeting);
-    var asProps = component({ render: greeting });
+    var render = component(greeting);
 
-    t.plan(2);
+    t.plan(1);
     t.equal(
-      asFn('world').toString(),
+      render('world').toString(),
       greeting('world').toString(),
-      'as function'
-    );
-    t.equal(
-      asProps('world').toString(),
-      greeting('world').toString(),
-      'as object'
+      'output match'
     );
   });
 
@@ -30,13 +24,15 @@ test('browser', function (t) {
       beforerender: 0,
       afterupdate: 0
     };
-    var render = component({
-      load: load,
-      unload: unload,
-      update: update,
-      beforerender: beforerender,
-      afterupdate: afterupdate,
-      render: greeting
+
+    var self;
+    var render = component(function hooks(name) {
+      self = this;
+      return html`
+        <div onupdate=${ update } onbeforerender=${ beforerender } onload=${ load } onunload=${ unload } onafterupdate=${ afterupdate }>
+          Hello ${ name }!
+        </div>
+      `;
     });
 
     var node = render('world');
@@ -44,12 +40,15 @@ test('browser', function (t) {
 
     function load(element, str) {
       state.load += 1;
+      t.equal(self, this, 'context is same');
       t.equal(element, node, 'load recived element');
       t.equal(str, 'world', 'arguments forwarded to load');
       render('Jane');
     }
-    function unload(str) {
+    function unload(element, str) {
       state.unload += 1;
+      t.equal(self, this, 'context is same');
+      t.equal(element, node, 'unload recived element');
       t.equal(str, 'Jane', 'arguments forwarded to unload');
       t.deepEqual(state, {
         load: 1,
@@ -62,6 +61,7 @@ test('browser', function (t) {
     }
     function update(element, args, prev) {
       state.update += 1;
+      t.equal(self, this, 'context is same');
       t.equal(element, node, 'update recived element');
       t.equal(args[0], 'Jane', 'arguments forwarded to update');
       t.equal(prev[0], 'world', 'prev arguments forwarded to update');
@@ -69,83 +69,52 @@ test('browser', function (t) {
     }
     function beforerender(element, str) {
       state.beforerender += 1;
+      t.equal(self, this, 'context is same');
       t.ok(element instanceof HTMLElement, 'beforerender recived (an) element');
       t.equal(str, 'world', 'arguments forwarded to beforerender');
     }
     function afterupdate(element, str) {
       state.afterupdate += 1;
+      t.equal(self, this, 'context is same');
       t.equal(element, node, 'afterupdate recived element');
       t.equal(str, 'Jane', 'arguments forwarded to afterupdate');
       requestAnimationFrame(() => container.removeChild(node));
     }
   });
 
-  t.test('cache', function (t) {
-    var count = 0;
-    var render = component({
-      cache: true,
-      update: function (element) {
-        element.firstElementChild.innerHTML = 'Hello Jane!';
-        return false;
-      },
-      render: function() {
-        count += 1;
-        if (count > 1) { t.fail('render called twice'); }
-        return greeting.apply(this, arguments);
-      }
+  t.test('child instances', function (t) {
+    var self;
+    var parent = component(function parent() {
+      self = self || this;
+      return html`<div id="${ this._name }"></div>`;
     });
 
-    t.plan(2);
+    t.throws(parent.create, 'throws w/o key');
 
-    var element = render('world');
-    var container = createContainer(element);
-    requestAnimationFrame(function () {
-      container.removeChild(element);
-      requestAnimationFrame(function () {
-        container.appendChild(render('Jane'));
-        t.equal(
-          element,
-          container.firstElementChild,
-          'element is preserved in-between mounts'
-        );
-        t.equal(
-          element.innerText,
-          'Hello Jane!',
-          'element was updated'
-        );
-      });
-    });
-  });
+    var child = parent.create('child');
 
-  t.test('rerender exposed on self', function (t) {
-    var props = { render: greeting };
+    t.throws(parent.create.bind(parent, 'child'), 'throws w/ existing key');
+    t.equal(parent.name, 'parent', 'function name intact');
+    t.equal(child._name, 'parent_child', 'instance name extended');
+    t.equal(child, parent.get('child'), 'got child');
+    t.equal(typeof parent.get('nope'), 'undefined', 'child does not exist');
 
-    component(props);
+    var node1 = parent();
+    var node2 = child.render();
+    var container = createContainer(node1);
+    container.appendChild(node2);
 
-    t.plan(1);
-    t.equal(typeof props.rerender, 'function', 'rerender attached to props');
-  });
+    t.equal(self, parent.get(), 'no argument returns self');
+    t.false(node1.isSameNode(node2), 'different node created');
+    t.true(parent.use('child').isSameNode(node2), 'use renders child');
 
-  t.test('log methods exposed on self', function (t) {
-    var methods = [ 'trace', 'debug', 'info', 'warn', 'error', 'fatal' ];
-    var props = { render: render };
+    parent.delete('child');
+    t.equal(typeof parent.get('child'), 'undefined', 'child does not exist');
+    t.throws(parent.delete, 'throws w/o key');
+    t.throws(parent.delete.bind(parent, 'child'), 'throws w/ unknown key');
 
-    t.plan(methods.length + 1);
-
-    component(props)('world');
-
-    function render() {
-      var self = this;
-      t.equal(typeof self.log, 'object', 'has log object on self');
-      methods.map(function (key) {
-        t.equal(
-          typeof self.log[key],
-          'function',
-          key + ' attached to self.log'
-        );
-      });
-      return greeting.apply(self, arguments);
-    }
+    t.true(parent.use('child') instanceof Element, 'use creates child');
+    t.end();
   });
 });
 

@@ -127,23 +127,24 @@ function component(name, render) {
    * Expose API for handling child instances on public renderer function
    */
 
-  renderer.create = function create(key) {
+  renderer.create = function (key) {
     assert(key, 'Component instance key is required');
     assert(!component.cache[key], 'Key ' + key + ' already exist');
-    component.cache[key] = new Component([name, key].join('-'));
+    component.cache[key] = new Component([name, key].join('_'));
     return component.cache[key];
   };
 
-  renderer.get = function get(key) {
-    return component.cache[key];
+  renderer.get = function (key) {
+    return key ? component.cache[key] : component;
   };
 
-  renderer.unset = function unset(key) {
+  renderer.delete = function (key) {
+    assert(key, 'Component instance key is required');
     assert(component.cache[key], 'Cannot find ' + key + ' in ' + name);
     delete component.cache[key];
   };
 
-  renderer.use = function use() {
+  renderer.use = function () {
     var key = Array.prototype.slice.call(arguments, 0, 1);
     var args = Array.prototype.slice.call(arguments, 1);
     var child = renderer.get(key);
