@@ -66,7 +66,7 @@ Delete component instance by name.
 Render named component forwarding trailing arguments to render function. Returns element.
 
 <details>
-<summary>See example</summary>
+<summary><strong>See example</strong></summary>
 
 ```javascript
 const article = component(function article(props) {
@@ -97,7 +97,7 @@ function list(items) {
 All the lifecycle hooks of nanocomponent are supported, i.e. [`beforerender`](https://github.com/choojs/nanocomponent#nanocomponentprototypebeforerenderel), [`load`](https://github.com/choojs/nanocomponent#nanocomponentprototypeloadel), [`unload`](https://github.com/choojs/nanocomponent#nanocomponentprototypeunloadel), [`afterupdate`](https://github.com/choojs/nanocomponent#nanocomponentprototypeafterupdateel), and [`afterreorder`](https://github.com/choojs/nanocomponent#nanocomponentprototypeafterreorderel). Lifecycle hooks are declared on the element itself (with an "on" prefix) and are forwarded to the underlying nanocomponent instance.
 
 <details>
-<summary>See example</summary>
+<summary><strong>See example</strong></summary>
 
 ```javascript
 component(function hooks(name) {
@@ -140,7 +140,7 @@ function afterreorder(el, name) {
 When working with 3rd party libraries you might not want to rerender the element after it has been removed from the DOM. Previous versions of fun-component had element caching built in. Since this is easy enough to achieve in userland it was removed from core in version 3.
 
 <details>
-<summary>See example</summary>
+<summary><strong>See example</strong></summary>
 
 ```javascript
 function createMap(name = 'map') {
