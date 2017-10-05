@@ -22,7 +22,7 @@ function component(name, render) {
 
   if (typeof name === 'function') {
     render = name;
-    name = render.name || 'fun-component';
+    name = render.displayName || render.name || 'fun-component';
   }
 
   assert(render, 'Component must be provided with a render function');
@@ -162,6 +162,7 @@ function component(name, render) {
 
   Object.defineProperty(renderer, 'name', { writable: true });
   renderer.name = name;
+  renderer.displayName = name;
 
   /**
    * Expose just the wrapper function
