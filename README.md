@@ -3,7 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/fun-component.svg?)](https://npmjs.org/package/fun-component) [![build status](https://img.shields.io/travis/tornqvist/fun-component/master.svg?style=flat-square)](https://travis-ci.org/tornqvist/fun-component)
 [![downloads](http://img.shields.io/npm/dm/fun-component.svg?style=flat-square)](https://npmjs.org/package/fun-component)
 
-A pure functional approach to authoring HTML components. Really just syntactic suggar on top of [nanocomponent](https://github.com/choojs/nanocomponent).
+A purely functional approach to authoring performant HTML components. Call ut syntactic suggar on top of [nanocomponent](https://github.com/choojs/nanocomponent), if you will. Pass in a function and fun-component will handle rerendering as needed when called upon.
 
 ## Usage
 
@@ -13,31 +13,37 @@ The most straight forward usage is to pass in a function and have the default sh
 const html = require('bel')
 const component = require('fun-component')
 
-const render = component(function user(props) {
+const link = component(function user(props) {
   return html`<a href="/users/${ props._id }">${ props.name }</a>`
 })
 
-document.body.appendChild(render({ id: 123, name: 'Jane Doe' }))
+document.body.appendChild(link({ id: 123, name: 'Jane Doe' }))
 ```
 
-A stateful component can issue a rerender with the next state using the underlying nanocomponent.
+A stateful component can issue a rerender using the underlying nanocomponent, prividing the next state.
 
 ```javascript
 const html = require('bel')
 const component = require('fun-component')
 
-const render = component(function expandable(expanded = false) {
-  const toggle = () => this.render(!expanded)
+const expandable = component(function expandable(text, { expanded = false }) {
+  const toggle = () => this.render(text, { expanded: !expanded })
 
   return html`
-    <button onclick=${ toggle }>${ expanded ? 'Close' : 'Open' }</button>
-    <p style="display: ${ expanded ? 'block' : 'none' };">
-      Lorem ipsum dolor sit…
-    </p>
+    <div onupdate=${ update }>
+      <button onclick=${ toggle }>${ expanded ? 'Close' : 'Open' }</button>
+      <p style="display: ${ expanded ? 'block' : 'none' };">
+        ${ text }
+      </p>
+    </div>
   `
 })
 
-document.body.appendChild(render())
+function update(el, [text, state], [prevText, prevState]) {
+  return text !== prevText || (state && state.expanded !== prevState.expanded);
+}
+
+document.body.appendChild(expandable('Hi there!'))
 ```
 
 ## API
@@ -45,7 +51,9 @@ document.body.appendChild(render())
 ### `component(function)`
 ### `component(string, function)`
 
-Create a new component. Either takes a function as an only argument or a name and a function. Returns a function that renders the element. If no name is supplied the name is derrived from the function's `name` property. The name is used for logging using [nanologger](https://github.com/choojs/nanologger), enable it through `localStorage.setItem('logLevel', 'debug|info|warn|error|fatal')`.
+Create a new component. Either takes a function as an only argument or a name and a function. Returns a function that renders the element. If no name is supplied the name is derrived from the function's `name` property. The name is used for logging using [nanologger](https://github.com/choojs/nanologger).
+
+*Warning: implicit function names are most probably mangled during minification. If name consistency is important to your implementation, use the explicit name syntax: `component('thing', function () { … })`.*
 
 The underlying nanocomponent and nanologger instances are exposed on the calling context (`this`) in all lifecycle hooks as well as the render function itself and can be accessed as such `this.rerender()` or `this.debug('hello there')`.
 
@@ -63,10 +71,11 @@ Delete component instance by name.
 
 #### `myComponent.use(string, [...arguments])`
 
-Render named component forwarding trailing arguments to render function. Returns element.
+Creates and render named component forwarding trailing arguments to render function. Returns element.
 
-<details>
-<summary><strong>See example</strong></summary>
+#### Example
+
+Create multiple instances of base component `article` using an id as unique key and delete all instances on unload.
 
 ```javascript
 const article = component(function article(props) {
@@ -82,22 +91,25 @@ const article = component(function article(props) {
 
 function list(items) {
   return html`
-    <main>
+    <main onunload=${ cleanup }>
       <h1>List of articles</h1>
       ${ items.map(item => article.use(item.id, item)) }
     </main>
   `
 }
-```
 
-</details>
+function cleanup(el, items) {
+  items.forEach(item => article.delete(item.id));
+}
+```
 
 ### Lifecycle hooks
 
 All the lifecycle hooks of nanocomponent are supported, i.e. [`beforerender`](https://github.com/choojs/nanocomponent#nanocomponentprototypebeforerenderel), [`load`](https://github.com/choojs/nanocomponent#nanocomponentprototypeloadel), [`unload`](https://github.com/choojs/nanocomponent#nanocomponentprototypeunloadel), [`afterupdate`](https://github.com/choojs/nanocomponent#nanocomponentprototypeafterupdateel), and [`afterreorder`](https://github.com/choojs/nanocomponent#nanocomponentprototypeafterreorderel). Lifecycle hooks are declared on the element itself (with an "on" prefix) and are forwarded to the underlying nanocomponent instance.
 
-<details>
-<summary><strong>See example</strong></summary>
+#### Example
+
+Implement every lifecycle hook, logging latest argument on being called.
 
 ```javascript
 component(function hooks(name) {
@@ -133,14 +145,13 @@ function afterreorder(el, name) {
 }
 ```
 
-</details>
-
 ## Caching
 
 When working with 3rd party libraries you might *not* want to rerender the element after it has been removed from the DOM. Previous versions of fun-component had element caching built in. Since this is easy enough to achieve in userland it was removed from core in version 3.
 
-<details>
-<summary><strong>See example</strong></summary>
+### Example
+
+Cache mapbox instance and element in scoped variables on load and reuse when being mounted in the DOM the next time.
 
 ```javascript
 function createMap(name = 'map') {
@@ -178,8 +189,6 @@ function createMap(name = 'map') {
 }
 ```
 
-</details>
-
 ## Examples
 
 For example implementations, see [/examples](/examples). Either spin them up locally or visit the link.
@@ -195,7 +204,7 @@ For example implementations, see [/examples](/examples). Either spin them up loc
 
 Authoring a component should be as easy as writing a function. Using arguments and scope to handle state is both implicit and transparent. Worrying about calling context, and stashing things on `this` makes for cognitive overhead.
 
-Not for you? If OOP is your thing, use [nanocomponent](https://github.com/choojs/nanocomponent). If you're more into events, maybe [microcomponent](https://github.com/yoshuawuyts/microcomponent) is a good fit.
+Not for you? If object oriented programming is your thing, use [nanocomponent](https://github.com/choojs/nanocomponent). If you're more into events, maybe [microcomponent](https://github.com/yoshuawuyts/microcomponent) is a good fit.
 
 ## See Also
 
