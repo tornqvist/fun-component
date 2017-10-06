@@ -5,6 +5,7 @@ var Nanocomponent = require('nanocomponent');
 var HOOKS = ['load', 'unload', 'beforerender', 'afterupdate', 'afterreorder'];
 
 module.exports = component;
+module.exports.Component = Component;
 
 /**
  * Lifecycle hooks for a statefull component.
@@ -25,94 +26,11 @@ function component(name, render) {
     name = render.displayName || render.name || 'fun-component';
   }
 
-  assert(render, 'Component must be provided with a render function');
-
-  function Component() {
-    Nanocomponent.call(this, arguments[0] || name);
-    this.cache = {};
-    this.debug('create');
-  }
-
-  /**
-   * Mixin both Nanocomponent and Nanologger on Component prototype tree
-   */
-
-  Component.prototype = Object.create(Nanocomponent.prototype);
-  Object.assign(Component.prototype, new Nanologger(name), Nanologger.prototype);
-  Component.prototype.constructor = Component;
-
-  /**
-   * Default to shallow diff and capture arguments on update
-   */
-
-  Component.prototype.update = function () {
-    var result;
-    var args = Array.prototype.slice.call(arguments);
-
-    if (this._update) {
-      result = this._update.call(this, this.element, args, this._arguments);
-    } else {
-      result = diff(args, this._arguments);
-    }
-
-    if (result) {
-      this.debug('update', args);
-    }
-
-    this._arguments = args;
-
-    return result;
-  };
-
-  /**
-   * Capture arguments on render
-   */
-
-  Component.prototype.createElement = function() {
-    var args = Array.prototype.slice.call(arguments);
-
-    if (!this.element) {
-      this.debug('render', args);
-    }
-
-    return render.apply(this, args);
-  };
-
-  /**
-   * Pluck out lifecycle hooks from element and attach to self
-   */
-
-  Component.prototype._handleRender = function(args) {
-    var self = this;
-    var el = Nanocomponent.prototype._handleRender.call(this, args);
-
-    HOOKS.forEach(function (key) {
-      var hook = el['on' + key];
-
-      if (hook) {
-        self[key] = function () {
-          var args = Array.prototype.slice.call(arguments);
-          self.debug(key, self._arguments);
-          hook.apply(self, args.concat(self._arguments));
-        };
-
-        el['on' + hook] = null;
-      }
-    });
-
-    if (el.onupdate) {
-      this._update = el.onupdate;
-      el.onupdate = null;
-    }
-
-    return el;
-  };
-
   /**
    * Create an instance of the new component
    */
 
-  var component = new Component();
+  var component = new Component(name, render);
 
   /**
    * Create a middleman render method
@@ -130,7 +48,7 @@ function component(name, render) {
   renderer.create = function (key) {
     assert(key, 'Component instance key is required');
     assert(!component.cache[key], 'Key ' + key + ' already exist');
-    component.cache[key] = new Component([name, key].join('_'));
+    component.cache[key] = new Component([name, key].join('_'), render);
     return component.cache[key];
   };
 
@@ -170,6 +88,98 @@ function component(name, render) {
 
   return renderer;
 }
+
+/**
+ * Custom extention of Nanocomponent
+ *
+ * @param {string} name Component name
+ * @param {function} render Should return Element
+ */
+
+function Component(name, render) {
+  assert(typeof name === 'string', 'Missing name');
+  assert(typeof render === 'function', 'Missing render function');
+  Nanocomponent.call(this, arguments[0] || name);
+  Object.assign(this, new Nanologger(name));
+  this.cache = {};
+  this._render = render;
+  this.debug('create');
+}
+
+/**
+ * Mixin both Nanocomponent and Nanologger on Component prototype tree
+ */
+
+Component.prototype = Object.create(Nanocomponent.prototype);
+Object.assign(Component.prototype, Nanologger.prototype);
+Component.prototype.constructor = Component;
+
+/**
+ * Default to shallow diff and capture arguments on update
+ */
+
+Component.prototype.update = function () {
+  var result;
+  var args = Array.prototype.slice.call(arguments);
+
+  if (this._update) {
+    result = this._update.call(this, this.element, args, this._arguments);
+  } else {
+    result = diff(args, this._arguments);
+  }
+
+  if (result) {
+    this.debug('update', args);
+  }
+
+  this._arguments = args;
+
+  return result;
+};
+
+/**
+ * Proxy custom render function to `createElement`
+ */
+
+Component.prototype.createElement = function() {
+  var args = Array.prototype.slice.call(arguments);
+
+  if (!this.element) {
+    this.debug('render', args);
+  }
+
+  return this._render.apply(this, args);
+};
+
+/**
+ * Pluck out lifecycle hooks from element and attach to self
+ */
+
+Component.prototype._handleRender = function(args) {
+  var self = this;
+  var el = Nanocomponent.prototype._handleRender.call(this, args);
+
+  HOOKS.forEach(function (key) {
+    var hook = el['on' + key];
+
+    if (hook) {
+      self[key] = function () {
+        var args = Array.prototype.slice.call(arguments);
+        self.debug(key, self._arguments);
+        hook.apply(self, args.concat(self._arguments));
+      };
+
+      el['on' + hook] = null;
+    }
+  });
+
+  if (el.onupdate) {
+    this._update = el.onupdate;
+    el.onupdate = null;
+  }
+
+  return el;
+};
 
 /**
  * Simple shallow diff of two sets of arguments
