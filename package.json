@@ -10,6 +10,7 @@
     "test:node": "NODE_ENV=test node test/node.js | tap-format-spec",
     "example:mapbox": "FUN_COMPONENT=../.. npm start --prefix ./examples/mapbox",
     "example:list": "FUN_COMPONENT=../.. npm start --prefix ./examples/list",
+    "example:expandable": "FUN_COMPONENT=../.. npm start --prefix ./examples/expandable",
     "deploy:mapbox": "npm run deploy --prefix ./examples/mapbox",
     "deploy:list": "npm run deploy --prefix ./examples/list"
   },
@@ -40,6 +41,7 @@
     "tape-run": "^3.0.0"
   },
   "dependencies": {
+    "function-name": "^2.0.0",
     "nanoassert": "^1.1.0",
     "nanocomponent": "^6.4.2",
     "nanologger": "^1.3.0"

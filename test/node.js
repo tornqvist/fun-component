@@ -27,16 +27,15 @@ test('server side render', function (t) {
     var explicid = component('greeting', greeting);
 
     function noop() {}
-    noop.displayName = 'trolol';
-    var displayName = component(noop);
 
     t.equal(implicid.name, 'greeting', 'implicid name is mirrored');
-    t.equal(implicid.displayName, 'greeting', 'implicid name map to displayName');
     t.equal(explicid.name, 'greeting', 'explicid name is mirrored');
-    t.equal(explicid.displayName, 'greeting', 'explicid name map to displayName');
-    t.equal(displayName.displayName, 'trolol', 'displayName is mirrored');
-    t.equal(displayName.name, 'trolol', 'displayName map to name');
     t.end();
+  });
+
+  t.test('Component class in export', function (t) {
+    t.plan(1);
+    t.ok(typeof component.Component === 'function', 'Component in export');
   });
 
   t.test('nanocomponent in calling context', function (t) {

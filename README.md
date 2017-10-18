@@ -13,24 +13,29 @@ The most straight forward usage is to pass in a function and have the default sh
 const html = require('bel')
 const component = require('fun-component')
 
-const link = component(function user(props) {
-  return html`<a href="/users/${ props._id }">${ props.name }</a>`
+const link = component(function user(ctx, id, name) {
+  return html`<a href="/users/${ id }">${ name }</a>`
 })
 
-document.body.appendChild(link({ id: 123, name: 'Jane Doe' }))
+document.body.appendChild(link(123, 'Jane Doe'))
 ```
 
-A stateful component can issue a rerender using the underlying nanocomponent, prividing the next state.
+A stateful component can store state on the context and issue a rerender using the underlying nanocomponent.
 
 ```javascript
 const html = require('bel')
 const component = require('fun-component')
+const restate = require('fun-component/restate')
 
-const expandable = component(function expandable(text, { expanded = false }) {
-  const toggle = () => this.render(text, { expanded: !expanded })
+const render = component(function expandable(ctx, text) {
+  const expanded = ctx.expanded
+  const toggle = () => {
+    ctx.expanded = !expanded
+    ctx.rerender()
+  }
 
-  return html`
-    <div onupdate=${ update }>
+  html`
+    <div>
       <button onclick=${ toggle }>${ expanded ? 'Close' : 'Open' }</button>
       <p style="display: ${ expanded ? 'block' : 'none' };">
         ${ text }
@@ -39,11 +44,7 @@ const expandable = component(function expandable(text, { expanded = false }) {
   `
 })
 
-function update(el, [text, state], [prevText, prevState]) {
-  return text !== prevText || (state && state.expanded !== prevState.expanded);
-}
-
-document.body.appendChild(expandable('Hi there!'))
+document.body.appendChild(render('Hi there!'))
 ```
 
 ## API
@@ -51,34 +52,48 @@ document.body.appendChild(expandable('Hi there!'))
 ### `component(function)`
 ### `component(string, function)`
 
-Create a new component. Either takes a function as an only argument or a name and a function. Returns a function that renders the element. If no name is supplied the name is derrived from the function's `name` property. The name is used for logging using [nanologger](https://github.com/choojs/nanologger).
+Create a new component. Either takes a function as an only argument or a name and a function. Returns a function that renders the element. If no name is supplied the name is derrived from the functions `name` property. The name is used for logging using [nanologger](https://github.com/choojs/nanologger).
 
-*Warning: implicit function names are most probably mangled during minification. If name consistency is important to your implementation, use the explicit name syntax: `component('thing', function () { … })`.*
+*Warning: implicit function names are most probably mangled during minification. If name consistency is important to your implementation, use the explicit name syntax: `component('hello', () => html`<h1>Hi there!</h1>`)`.*
 
-The underlying nanocomponent and nanologger instances are exposed on the calling context (`this`) in all lifecycle hooks as well as the render function itself and can be accessed as such `this.rerender()` or `this.debug('hello there')`.
+### Context
+
+The component context (`ctx`) is prefixed to the arguments of all lifecycle hooks and the render function itself. The component context can be used to access the underlying nanocomponent and nanologger objects.
+
+```javascript
+// Using nanologger and exposing nanocomponent inner workings
+component('Echo', ctx => {
+  ctx.debug(`Rendering ${ ctx._ncID }`)
+  return html`<h1>I'm ${ ctx._name } from the ${ ctx._hasWindow ? 'client' : 'server' }</h1>`
+})
+```
+
+### Reusing a component
+
+Sometimes you'll want to create more than one instance of a component, for lists or repeat patterns.
 
 #### `myComponent.create(string)`
 
-Create a named instance, a "subclass" if you will, of a component. Returns its underlying component instance.
+Create a new component context. Takes a unique id. Returns new context object.
 
 #### `myComponent.get(string)`
 
-Get component instance by name. If no name is supplied, base component is returned.
+Get context by id. If no id is supplied, the base component context object is returned.
 
-#### `myComponent.delete(string)`
+#### `myComponent.remove(string)`
 
-Delete component instance by name.
+Delete component context by id.
 
 #### `myComponent.use(string, [...arguments])`
 
-Creates and render named component forwarding trailing arguments to render function. Returns element.
+Creates and render component by id forwarding trailing arguments to render function. Returns element.
 
 #### Example
 
-Create multiple instances of base component `article` using an id as unique key and delete all instances on unload.
+Create and render multiple instances of base component `article`.
 
 ```javascript
-const article = component(function article(props) {
+const article = component(function article(ctx, props) {
   return html`
     <article>
       <img src="${ props.img }" alt="${ props.title }">
@@ -91,15 +106,10 @@ const article = component(function article(props) {
 
 function list(items) {
   return html`
-    <main onunload=${ cleanup }>
-      <h1>List of articles</h1>
+    <main>
       ${ items.map(item => article.use(item.id, item)) }
     </main>
   `
-}
-
-function cleanup(el, items) {
-  items.forEach(item => article.delete(item.id));
 }
 ```
 
@@ -112,7 +122,7 @@ All the lifecycle hooks of nanocomponent are supported, i.e. [`beforerender`](ht
 Implement every lifecycle hook, logging latest argument on being called.
 
 ```javascript
-component(function hooks(name) {
+component(function hooks(ctx, name) {
   return html`
     <div onupdate=${ update } onbeforerender=${ beforerender } onload=${ load } onunload=${ unload } onafterupdate=${ afterupdate } onafterreorder=${ afterreorder }>
       Hello ${ name }!
@@ -120,71 +130,69 @@ component(function hooks(name) {
   `
 })
 
-function update(el, [name], [prev]) {
+function update(ctx, [name], [prev]) {
   return name !== prev
 }
 
-function beforerender(el, name) {
-  this.debug(`${ name } about to render`)
+function beforerender(ctx, name) {
+  ctx.debug(`will to render with ${ name }`)
 }
 
-function load(el, name) {
-  this.debug(`${ name } mounted in DOM`)
+function load(ctx, name) {
+  ctx.debug(`mounted in DOM with ${ name }`)
 }
 
-function unload(name) {
-  this.debug(`${ name } removed from DOM`)
+function unload(ctx, name) {
+  ctx.debug(`removed from DOM with ${ name }`)
 }
 
-function afterupdate(el, name) {
-  this.debug(`${ name } updated`)
+function afterupdate(ctx, name) {
+  ctx.debug(`updated with ${ name }`)
 }
 
-function afterreorder(el, name) {
-  this.debug(`${ name } reordered`)
+function afterreorder(ctx, name) {
+  ctx.debug(`reordered with ${ name }`)
 }
 ```
 
 ## Caching
 
-When working with 3rd party libraries you might *not* want to rerender the element after it has been removed from the DOM. Previous versions of fun-component had element caching built in. Since this is easy enough to achieve in userland it was removed from core in version 3.
+When working with 3rd party libraries you might *not* want the element to rerender everytime its being removed and added to the page. Previous versions of fun-component had element caching built in. Since this is easy enough to achieve in userland it was removed from core in version 3.
 
 ### Example
 
-Cache mapbox instance and element in scoped variables on load and reuse when being mounted in the DOM the next time.
+Cache mapbox instance and container element on ctx and reuse when being mounted in the DOM the next time.
 
 ```javascript
-function createMap(name = 'map') {
-  let map, cached
-
-  return component(name, function (coordinates) {
-    if (!this._loaded && cached) {
-      return cached
-    }
-
-    return html`
-      <div class="Map" onupdate=${ update } onload=${ load }>
-      </div>
-    `
-  })
-
-  function update(element, [coordinates], [prev]) {
-    if (coordinates.lng !== prev.lng || coordinates.lat !== prev.lat) {
-      map.setCenter([coordinates.lng, coordinates.lat])
-    }
-    return false
+const render = component(function map(ctx, coordinates) {
+  // Using nanocomponent `_loaded` member to check if it is mounted in the page
+  if (!ctx._loaded && ctx.cached) {
+    // If it is not mounted but has been cached, return cached element
+    return ctx.cached
   }
 
-  function load(element, coordinates) {
-    if (cached) {
-      map.setCenter([coordinates.lng, coordinates.lat]).resize()
-    } else {
-      cached = element
-      map = new mapboxgl.Map({
-        container: element,
-        center: [coordinates.lng, coordinates.lat],
-      })
-    }
+  return html`
+    <div class="Map" onupdate=${ update } onload=${ load }>
+    </div>
+  `
+})
+
+function update(ctx, [coordinates], [prev]) {
+  if (coordinates.lng !== prev.lng || coordinates.lat !== prev.lat) {
+    ctx.map.setCenter([coordinates.lng, coordinates.lat])
+  }
+  return false
+}
+
+function load(ctx, coordinates) {
+  if (ctx.cached) {
+    ctx.map.setCenter([coordinates.lng, coordinates.lat]).resize()
+  } else {
+    ctx.cached = ctx.element
+    ctx.map = new mapboxgl.Map({
+      container: ctx.element,
+      center: [coordinates.lng, coordinates.lat],
+    })
   }
 }
 ```
@@ -211,10 +219,6 @@ Not for you? If object oriented programming is your thing, use [nanocomponent](h
 - [yoshuawuyts/microcomponent](https://github.com/yoshuawuyts/microcomponent)
 - [jongacnik/component-box](https://github.com/jongacnik/component-box)
 - [choojs/nanocomponent](https://github.com/choojs/nanocomponent)
-
-## Todo
-
-- [ ] Add statefull example
 
 ## License
 

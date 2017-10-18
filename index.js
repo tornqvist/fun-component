@@ -1,90 +1,47 @@
 var assert = require('nanoassert');
-var Nanologger = require('nanologger');
 var Nanocomponent = require('nanocomponent');
+var setName = require('function-name');
 
+var NAME = 'fun-component';
 var HOOKS = ['load', 'unload', 'beforerender', 'afterupdate', 'afterreorder'];
 
 module.exports = component;
-module.exports.Component = Component;
+module.exports.Context = Context;
 
 /**
- * Lifecycle hooks for a statefull component.
- *
+ * Create a functional wrapper for nanocomponent
  * @param {any} name Explicit name or render function
  * @param {function} [render] Create an HTMLElement
  * @returns {function} Renders component
  */
 
 function component(name, render) {
-
-  /**
-   * Derrive the render function to use for `createElement`
-   */
-
   if (typeof name === 'function') {
     render = name;
-    name = render.displayName || render.name || 'fun-component';
+    name = Object.getOwnPropertyDescriptor(render, 'name').value || NAME;
   }
 
-  /**
-   * Create an instance of the new component
-   */
+  var middleware = [];
+  var context = new Context(name, render);
 
-  var component = new Component(name, render);
-
-  /**
-   * Create a middleman render method
-   */
-
+  setName(renderer, name);
   function renderer() {
     var args = Array.prototype.slice.call(arguments);
-    return component.render.apply(component, args);
+
+    return middleware.concat(function (ctx) {
+      return ctx.render.apply(ctx, args);
+    }).reduce(function (ctx, plugin) {
+      return plugin(ctx, args);
+    }, context);
   }
 
-  /**
-   * Expose API for handling child instances on public renderer function
-   */
+  Object.defineProperty(renderer, 'use', {
+    get: function () { return use; }
+  });
 
-  renderer.create = function (key) {
-    assert(key, 'Component instance key is required');
-    assert(!component.cache[key], 'Key ' + key + ' already exist');
-    component.cache[key] = new Component([name, key].join('_'), render);
-    return component.cache[key];
-  };
-
-  renderer.get = function (key) {
-    return key ? component.cache[key] : component;
-  };
-
-  renderer.delete = function (key) {
-    assert(key, 'Component instance key is required');
-    assert(component.cache[key], 'Cannot find ' + key + ' in ' + name);
-    delete component.cache[key];
-  };
-
-  renderer.use = function () {
-    var key = Array.prototype.slice.call(arguments, 0, 1);
-    var args = Array.prototype.slice.call(arguments, 1);
-    var child = renderer.get(key);
-
-    if (!child) {
-      child = renderer.create(key);
-    }
-
-    return child.render.apply(child, args);
-  };
-
-  /**
-   * Overwrite function name with the original name
-   */
-
-  Object.defineProperty(renderer, 'name', { writable: true });
-  renderer.name = name;
-  renderer.displayName = name;
-
-  /**
-   * Expose just the wrapper function
-   */
+  function use(fn) {
+    middleware.push(fn);
+  }
 
   return renderer;
 }
@@ -96,40 +53,36 @@ function component(name, render) {
  * @param {function} render Should return Element
  */
 
-function Component(name, render) {
-  assert(typeof name === 'string', 'Missing name');
-  assert(typeof render === 'function', 'Missing render function');
-  Nanocomponent.call(this, arguments[0] || name);
-  Object.assign(this, new Nanologger(name));
-  this.cache = {};
+function Context(name, render) {
+  assert(typeof name === 'string', 'missing name');
+  assert(typeof render === 'function', 'missing render function');
+  Nanocomponent.call(this, name);
   this._render = render;
-  this.debug('create');
+  var ctx = this;
+  this.createElement = function () {
+    var args = Array.prototype.slice.call(arguments);
+    return render.apply(undefined, [ctx].concat(args));
+  };
 }
 
 /**
- * Mixin both Nanocomponent and Nanologger on Component prototype tree
+ * Mixin both Nanocomponent and Nanologger on Context prototype tree
  */
 
-Component.prototype = Object.create(Nanocomponent.prototype);
-Object.assign(Component.prototype, Nanologger.prototype);
-Component.prototype.constructor = Component;
+Context.prototype = Object.create(Nanocomponent.prototype);
 
 /**
  * Default to shallow diff and capture arguments on update
  */
 
-Component.prototype.update = function () {
+Context.prototype.update = function () {
   var result;
   var args = Array.prototype.slice.call(arguments);
 
   if (this._update) {
-    result = this._update.call(this, this.element, args, this._arguments);
+    result = this._update(this, args, this._arguments);
   } else {
     result = diff(args, this._arguments);
-  }
-
-  if (result) {
-    this.debug('update', args);
   }
 
   this._arguments = args;
@@ -138,43 +91,25 @@ Component.prototype.update = function () {
 };
 
 /**
- * Proxy custom render function to `createElement`
- */
-
-Component.prototype.createElement = function() {
-  var args = Array.prototype.slice.call(arguments);
-
-  if (!this.element) {
-    this.debug('render', args);
-  }
-
-  return this._render.apply(this, args);
-};
-
-/**
  * Pluck out lifecycle hooks from element and attach to self
  */
 
-Component.prototype._handleRender = function(args) {
-  var self = this;
+Context.prototype._handleRender = function (args) {
+  var ctx = this;
   var el = Nanocomponent.prototype._handleRender.call(this, args);
 
   HOOKS.forEach(function (key) {
     var hook = el['on' + key];
-
     if (hook) {
-      self[key] = function () {
-        var args = Array.prototype.slice.call(arguments);
-        self.debug(key, self._arguments);
-        hook.apply(self, args.concat(self._arguments));
+      ctx[key] = function () {
+        return hook.apply(undefined, [ctx].concat(ctx._arguments));
       };
-
       el['on' + hook] = null;
     }
   });
 
   if (el.onupdate) {
-    this._update = el.onupdate;
+    this._update = el.onupdate.bind(undefined);
     el.onupdate = null;
   }
 
