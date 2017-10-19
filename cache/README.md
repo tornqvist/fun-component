@@ -1,10 +1,10 @@
-# fun-component – cache
+# fun-component/cache
 
-Cache element on load and reuse on consecutive mounts.
+Cache element and reuse on consecutive mounts.
 
 ## Usage
 
-When working with 3rd party libraries you might *not* want the element to rerender everytime it is removed and added back to the page. This examples illustrates caching a Mapbox container element.
+When working with 3rd party libraries you might *not* want the element to rerender every time it is removed and added back to the page. This examples illustrates caching a Mapbox container element.
 
 ```javascript
 const html = require('bel')
@@ -46,9 +46,9 @@ function load(ctx, coordinates) {
 
 ### `cache()`
 
-Create middleware that saves a reference to mounted element as `ctx.cached`. Use this property to check whether a new element is being mounted or using the cache.
+Create middleware that saves a reference to mounted element as `ctx.cached`. Use this property to check whether a new element is being mounted or if using the cache.
 
-Unset `ctx.cached` to have a element be created on next render.
+Unset `ctx.cached` to have a element be re-created on next render.
 
 ```javascript
 const html = require('bel')

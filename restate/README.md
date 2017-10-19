@@ -1,6 +1,6 @@
-# fun-component – restate
+# fun-component/restate
 
-Add state and state update utility to the context object.
+Add state object and state management to the context object.
 
 ## Usage
 
@@ -22,7 +22,7 @@ const render = component(function expandable(ctx, text) {
   `
 })
 
-// Set all exandables to initially be collapsed
+// Set initial state of exandables to be collapsed
 render.use(restate({ expanded: false }))
 
 document.body.appendChild(render('Hi there!'))
@@ -36,7 +36,7 @@ Create a middleware that adds a `state` object and the `restate` method to conte
 
 ### `ctx.restate(next<object>)`
 
-Restate takes a new state as only argument. It updates the state and issues a rerender.
+Restate takes a new state as only argument. It updates the state and issues a rerender with the latest arguments.
 
 ## FAQ
 

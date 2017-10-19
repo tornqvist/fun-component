@@ -3,205 +3,185 @@
 [![npm version](https://img.shields.io/npm/v/fun-component.svg?)](https://npmjs.org/package/fun-component) [![build status](https://img.shields.io/travis/tornqvist/fun-component/master.svg?style=flat-square)](https://travis-ci.org/tornqvist/fun-component)
 [![downloads](http://img.shields.io/npm/dm/fun-component.svg?style=flat-square)](https://npmjs.org/package/fun-component)
 
-A purely functional approach to authoring performant HTML components. Call ut syntactic suggar on top of [nanocomponent](https://github.com/choojs/nanocomponent), if you will. Pass in a function and fun-component will handle rerendering as needed when called upon.
+A pure functional approach to authoring performant HTML components using plugins to extend functionality. Syntactic suggar on top of [nanocomponent](https://github.com/choojs/nanocomponent). Pass in a function and get another function back that handles rerendering as needed when called upon.
+
+- [Usage](#usage)
+- [API](#api)
+  - [Context](#context)
+  - [Lifecycle](#lifecycle)
+  - [Plugins](#plugins)
+- [Examples](#examples)
+- [Why tho?](#why-tho)
+- [License](#license)
 
 ## Usage
 
-The most straight forward usage is to pass in a function and have the default shallow diff figure out whether to rerender the component on consecutive calls.
+The most straightforward use is to pass in a function and have the default shallow diff figure out whether to rerender the component on consecutive calls.
 
 ```javascript
+// button.js
 const html = require('bel')
 const component = require('fun-component')
 
-const link = component(function user(ctx, id, name) {
-  return html`<a href="/users/${ id }">${ name }</a>`
-})
-
-document.body.appendChild(link(123, 'Jane Doe'))
-```
-
-A stateful component can store state on the context and issue a rerender using the underlying nanocomponent.
-
-```javascript
-const html = require('bel')
-const component = require('fun-component')
-const restate = require('fun-component/restate')
-
-const render = component(function expandable(ctx, text) {
-  const expanded = ctx.expanded
-  const toggle = () => {
-    ctx.expanded = !expanded
-    ctx.rerender()
-  }
-
-  html`
-    <div>
-      <button onclick=${ toggle }>${ expanded ? 'Close' : 'Open' }</button>
-      <p style="display: ${ expanded ? 'block' : 'none' };">
-        ${ text }
-      </p>
-    </div>
+module.exports = component(function button(ctx, clicks, onclick) {
+  return html`
+    <button onclick=${ onclick }>
+      Clicked ${ clicks } times
+    </button>
   `
 })
+```
 
-document.body.appendChild(render('Hi there!'))
+```javascript
+// app.js
+const choo = require('choo')
+const button = require('./button')
+
+const app = choo()
+app.route('/', view)
+app.mount('body')
+
+function view(state, emit) {
+  return html`
+    <body>
+      ${ button(state.clicks, () => emit('click')) }
+    </body>
+  `
+}
+
+app.use(function (state, emitter) {
+  state.clicks = 0
+  emitter.on('click', () => {
+    state.clicks += 1
+    emitter.emit(state.events.RENDER)
+  })
+})
 ```
 
 ## API
 
-### `component(function)`
-### `component(string, function)`
+### `component(render<function>)`
+### `component(name<string>, render<function>)`
 
-Create a new component. Either takes a function as an only argument or a name and a function. Returns a function that renders the element. If no name is supplied the name is derrived from the functions `name` property. The name is used for logging using [nanologger](https://github.com/choojs/nanologger).
+Create a new component context. Either takes a function as an only argument or a name and a function. Returns a function that renders the element. If no name is supplied the name is derrived from the functions `name` property.
 
-*Warning: implicit function names are most probably mangled during minification. If name consistency is important to your implementation, use the explicit name syntax: `component('hello', () => html`<h1>Hi there!</h1>`)`.*
+*Warning: implicit function names are most probably mangled during minification. If name consistency is important to your implementation, use the explicit name syntax.*
+
+```javascript
+component('hello', () => html`<h1>Hi there!</h1>`)
+```
 
 ### Context
 
-The component context (`ctx`) is prefixed to the arguments of all lifecycle hooks and the render function itself. The component context can be used to access the underlying nanocomponent and nanologger objects.
+The component context (`ctx`) is prefixed to the arguments of all lifecycle hooks and the render function itself. The context object can be used to access the underlying nanocomponent instance.
 
 ```javascript
-// Using nanologger and exposing nanocomponent inner workings
-component('Echo', ctx => {
-  ctx.debug(`Rendering ${ ctx._ncID }`)
-  return html`<h1>I'm ${ ctx._name } from the ${ ctx._hasWindow ? 'client' : 'server' }</h1>`
+// Exposing nanocomponent inner workings
+component(function echo(ctx) {
+  return html`<h1>I'm ${ ctx._name } on the ${ ctx._hasWindow ? 'client' : 'server' }</h1>`
 })
 ```
 
-### Reusing a component
-
-Sometimes you'll want to create more than one instance of a component, for lists or repeat patterns.
-
-#### `myComponent.create(string)`
-
-Create a new component context. Takes a unique id. Returns new context object.
-
-#### `myComponent.get(string)`
-
-Get context by id. If no id is supplied, the base component context object is returned.
-
-#### `myComponent.remove(string)`
-
-Delete component context by id.
-
-#### `myComponent.use(string, [...arguments])`
-
-Creates and render component by id forwarding trailing arguments to render function. Returns element.
-
-#### Example
-
-Create and render multiple instances of base component `article`.
-
-```javascript
-const article = component(function article(ctx, props) {
-  return html`
-    <article>
-      <img src="${ props.img }" alt="${ props.title }">
-      <h2>${ props.title }</h2>
-      <p>${ props.preamble }</p>
-      <a href="/articles/${ props.id }">Read more</a>
-    </article>
-  `
-})
-
-function list(items) {
-  return html`
-    <main>
-      ${ items.map(item => article.use(item.id, item)) }
-    </main>
-  `
-}
-```
-
-### Lifecycle hooks
+### Lifecycle
 
 All the lifecycle hooks of nanocomponent are supported, i.e. [`beforerender`](https://github.com/choojs/nanocomponent#nanocomponentprototypebeforerenderel), [`load`](https://github.com/choojs/nanocomponent#nanocomponentprototypeloadel), [`unload`](https://github.com/choojs/nanocomponent#nanocomponentprototypeunloadel), [`afterupdate`](https://github.com/choojs/nanocomponent#nanocomponentprototypeafterupdateel), and [`afterreorder`](https://github.com/choojs/nanocomponent#nanocomponentprototypeafterreorderel). Lifecycle hooks are declared on the element itself (with an "on" prefix) and are forwarded to the underlying nanocomponent instance.
 
+All lifecycle hooks are called with the context object and the latest arguments used to call the component.
+
+#### Update
+
+fun-component comes with a baked in default update function that performs a shallow diff of arguments to determine whether to update the component. Setting `onupdate` on the element overrides this default behavior.
+
+##### `onupdate(ctx<object>, args<array>, prev<array>)`
+
+Opposed to how nanocomponent calls the update function to detemrine whether to rerender the component, fun-component not only supplies the next arguments but also the previous arguments. These two can then be compared to determine whether to update.
+
+*Tip: Using ES2015 deconstruction makes this a breeze.*
+
+```javascript
+component(function greeting(ctx, title) {
+  return html`<h1 onupdate=${ update }>Hello ${ title }!</h1>`
+})
+
+// Deconstruct arguments and compare the `title` argument
+function update(ctx, [next], [prev]) {
+  return next !== prev
+}
+```
+
 #### Example
 
-Implement every lifecycle hook, logging latest argument on being called.
+Using every lifecycle hook available. The rendered element can be accessed on the context object as `ctx.element`.
 
 ```javascript
-component(function hooks(ctx, name) {
+component(function hooks(ctx, title) {
   return html`
     <div onupdate=${ update } onbeforerender=${ beforerender } onload=${ load } onunload=${ unload } onafterupdate=${ afterupdate } onafterreorder=${ afterreorder }>
-      Hello ${ name }!
+      Hello ${ title }!
     </div>
   `
 })
 
-function update(ctx, [name], [prev]) {
-  return name !== prev
+function update(ctx, [title], [prev]) {
+  console.log(`diffing ${ title } and ${ prev }`)
+  return title !== prev
 }
 
-function beforerender(ctx, name) {
-  ctx.debug(`will to render with ${ name }`)
+function beforerender(ctx, title) {
+  console.log(`will render with ${ title }`)
 }
 
-function load(ctx, name) {
-  ctx.debug(`mounted in DOM with ${ name }`)
+function load(ctx, title) {
+  console.log(ctx.element, `mounted in DOM with ${ title }`)
 }
 
-function unload(ctx, name) {
-  ctx.debug(`removed from DOM with ${ name }`)
+function unload(ctx, title) {
+  console.log(ctx.element, `removed from DOM with ${ title }`)
 }
 
-function afterupdate(ctx, name) {
-  ctx.debug(`updated with ${ name }`)
+function afterupdate(ctx, title) {
+  console.log(`updated with ${ title }`)
 }
 
-function afterreorder(ctx, name) {
-  ctx.debug(`reordered with ${ name }`)
+function afterreorder(ctx, title) {
+  console.log(`reordered with ${ title }`)
 }
 ```
 
-## Caching
+### Plugins
 
-When working with 3rd party libraries you might *not* want the element to rerender everytime its being removed and added to the page. Previous versions of fun-component had element caching built in. Since this is easy enough to achieve in userland it was removed from core in version 3.
-
-### Example
-
-Cache mapbox instance and container element on ctx and reuse when being mounted in the DOM the next time.
+Plugins are middlware functions that are called just before the component is rendered or updated. A plugin can inspect the arguments, modify the context object or even return another context object that is to be used for rendering the component.
 
 ```javascript
-const render = component(function map(ctx, coordinates) {
-  // Using nanocomponent `_loaded` member to check if it is mounted in the page
-  if (!ctx._loaded && ctx.cached) {
-    // If it is not mounted but has been cached, return cached element
-    return ctx.cached
-  }
+const html = require('bel')
+const component = require('fun-component')
 
-  return html`
-    <div class="Map" onupdate=${ update } onload=${ load }>
-    </div>
-  `
+const greeter = component(function greeting(ctx, title) {
+  return html`<h1>Hello ${ title }!</h1>`
 })
 
-function update(ctx, [coordinates], [prev]) {
-  if (coordinates.lng !== prev.lng || coordinates.lat !== prev.lat) {
-    ctx.map.setCenter([coordinates.lng, coordinates.lat])
-  }
-  return false
-}
+greeter.use(log)
 
-function load(ctx, coordinates) {
-  if (ctx.cached) {
-    ctx.map.setCenter([coordinates.lng, coordinates.lat]).resize()
-  } else {
-    ctx.cached = ctx.element
-    ctx.map = new mapboxgl.Map({
-      container: ctx.element,
-      center: [coordinates.lng, coordinates.lat],
-    })
-  }
+document.body.appendChild(greeter('world'))
+
+function log(ctx, title) {
+  console.log(`Rendering ${ ctx._ncID } with ${ title }`)
+  return ctx
 }
 ```
+
+fun-component is bundled with with a handfull of plugins that cover the most common scenarios. Have you written a plugin you want featured in this list? Fork, add, and make a pull request!
+
+- [spawn](spawn) – Spawn component contexts on demand and discard on unload.
+- [restate](restate) – Add state object and state management to the context object.
+- [logger](logger) – Add a logger (using [nanologger](https://github.com/choojs/nanologger)) to the context object.
+- [cache](cache) – Cache element and reuse on consecutive mounts.
 
 ## Examples
 
 For example implementations, see [/examples](/examples). Either spin them up locally or visit the link.
 
-- Mapbox (using element caching)
+- Mapbox (using [cache](cache))
   - `npm run example:mapbox`
   - https://fun-component-mapbox.now.sh
 - List (creating instances with `use`)
@@ -219,6 +199,8 @@ Not for you? If object oriented programming is your thing, use [nanocomponent](h
 - [yoshuawuyts/microcomponent](https://github.com/yoshuawuyts/microcomponent)
 - [jongacnik/component-box](https://github.com/jongacnik/component-box)
 - [choojs/nanocomponent](https://github.com/choojs/nanocomponent)
+- [choojs/choo](https://github.com/choojs/choo)
+- [shama/bel](https://github.com/shama/bel)
 
 ## License
 
