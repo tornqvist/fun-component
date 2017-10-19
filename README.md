@@ -12,7 +12,6 @@ A pure functional approach to authoring performant HTML components using plugins
   - [Plugins](#plugins)
 - [Examples](#examples)
 - [Why tho?](#why-tho)
-- [License](#license)
 
 ## Usage
 
