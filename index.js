@@ -134,10 +134,7 @@ function diff (args, prev) {
   return args.reduce(function (diff, arg, index) {
     if (prev[index] && prev[index].isSameNode && arg instanceof Element) {
       // Handle argument being an element
-      return diff || !arg.isSameNode(prev[index]);
-    } else if (typeof arg === 'function') {
-      // Compare argument as callback
-      return diff || arg.toString() !== prev[index].toString();
+      return diff || !arg.isSameNode(prev[index])
     } else {
       // Just plain compare
       return diff || arg !== prev[index]
