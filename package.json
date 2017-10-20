@@ -1,7 +1,7 @@
 {
   "name": "fun-component",
-  "version": "2.0.3",
-  "description": "Performant component as function",
+  "version": "3.0.0-1",
+  "description": "Functional approach to authoring performant HTML components using plugins",
   "main": "index.js",
   "scripts": {
     "posttest": "standard",
