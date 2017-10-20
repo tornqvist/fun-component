@@ -106,9 +106,7 @@ Context.prototype._handleRender = function (args) {
       ctx[key] = function () {
         return hook.apply(undefined, [ctx].concat(ctx._arguments))
       }
-        return hook.apply(undefined, [ctx].concat(ctx._arguments));
-      };
-      el['on' + hook] = null;
+      el['on' + key] = null
     }
   })
 

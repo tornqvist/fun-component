@@ -44,11 +44,10 @@ test('browser', function (t) {
       state.load += 1
       t.ok(ctx instanceof component.Context, 'context is first argument')
       t.equal(str, 'world', 'arguments forwarded to load')
-    function load(ctx, str) {
-      state.load += 1;
-      t.ok(ctx instanceof component.Context, 'context is first argument');
-      t.equal(str, 'world', 'arguments forwarded to load');
-      render('Jane');
+      t.equal(ctx.element.onupdate, null, 'onupdate cleared from element')
+      Object.keys(state).map(key => 'on' + key).forEach(function (key) {
+        t.equal(ctx.element[key], null, key + ' cleared from element')
+      })
       render('Jane')
     }
     function unload (ctx, str) {
