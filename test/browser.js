@@ -20,6 +20,31 @@ test('browser', function (t) {
     )
   })
 
+  t.test('default update diff', function (t) {
+    t.plan(2)
+    var render = component(function (ctx, name) {
+      var el = greeting(ctx, name)
+      el.onafterupdate = function (ctx, name, callback) {
+        callback()
+      }
+      return el
+    })
+
+    var next
+    var element = render('world')
+    createContainer(element)
+    function fn () { next() }
+
+    next = function () { t.pass('extra argument update') }
+    render('world', fn)
+    next = function () { t.pass('different argument update') }
+    render('again', fn)
+    next = function () {}
+    var proxy = render('world', fn, element)
+    next = function () { t.fail('proxy and element should be same') }
+    render('world', fn, proxy)
+  })
+
   t.test('lifecycle methods', function (t) {
     var state = {
       load: 0,
