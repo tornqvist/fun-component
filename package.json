@@ -4,7 +4,7 @@
   "description": "Performant component as function",
   "main": "index.js",
   "scripts": {
-    "posttest": "eslint ./ --ignore-pattern node_modules",
+    "posttest": "standard",
     "test": "npm run test:node && npm run test:browser",
     "test:browser": "browserify test/browser.js | tape-run | tap-format-spec",
     "test:node": "NODE_ENV=test node test/node.js | tap-format-spec",
@@ -35,8 +35,8 @@
     "browserify": "^14.4.0",
     "budo": "^10.0.4",
     "envify": "^4.1.0",
-    "eslint": "^4.6.1",
     "now": "^8.2.1",
+    "standard": "^10.0.3",
     "tape": "^4.8.0",
     "tape-run": "^3.0.0"
   },

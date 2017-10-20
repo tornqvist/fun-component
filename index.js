@@ -1,12 +1,12 @@
-var assert = require('nanoassert');
-var Nanocomponent = require('nanocomponent');
-var setName = require('function-name');
+var assert = require('nanoassert')
+var Nanocomponent = require('nanocomponent')
+var setName = require('function-name')
 
-var NAME = 'fun-component';
-var HOOKS = ['load', 'unload', 'beforerender', 'afterupdate', 'afterreorder'];
+var NAME = 'fun-component'
+var HOOKS = ['load', 'unload', 'beforerender', 'afterupdate', 'afterreorder']
 
-module.exports = component;
-module.exports.Context = Context;
+module.exports = component
+module.exports.Context = Context
 
 /**
  * Create a functional wrapper for nanocomponent
@@ -15,36 +15,36 @@ module.exports.Context = Context;
  * @returns {function} Renders component
  */
 
-function component(name, render) {
+function component (name, render) {
   if (typeof name === 'function') {
-    render = name;
-    name = Object.getOwnPropertyDescriptor(render, 'name').value || NAME;
+    render = name
+    name = Object.getOwnPropertyDescriptor(render, 'name').value || NAME
   }
 
-  var middleware = [];
-  var context = new Context(name, render);
+  var middleware = []
+  var context = new Context(name, render)
 
-  setName(renderer, name);
-  function renderer() {
-    var args = Array.prototype.slice.call(arguments);
+  setName(renderer, name)
+  function renderer () {
+    var args = Array.prototype.slice.call(arguments)
 
     return middleware.concat(function (ctx) {
-      assert(typeof ctx.render === 'function', 'plugin must return context');
-      return ctx.render.apply(ctx, args);
+      assert(typeof ctx.render === 'function', 'plugin must return context')
+      return ctx.render.apply(ctx, args)
     }).reduce(function (ctx, plugin) {
-      return plugin.apply(undefined, [ctx].concat(args));
-    }, context);
+      return plugin.apply(undefined, [ctx].concat(args))
+    }, context)
   }
 
   Object.defineProperty(renderer, 'use', {
-    get: function () { return use; }
-  });
+    get: function () { return use }
+  })
 
-  function use(fn) {
-    middleware.push(fn);
+  function use (fn) {
+    middleware.push(fn)
   }
 
-  return renderer;
+  return renderer
 }
 
 /**
@@ -54,68 +54,71 @@ function component(name, render) {
  * @param {function} render Should return Element
  */
 
-function Context(name, render) {
-  assert(typeof name === 'string', 'missing name');
-  assert(typeof render === 'function', 'missing render function');
-  Nanocomponent.call(this, name);
-  this._render = render;
-  var ctx = this;
+function Context (name, render) {
+  assert(typeof name === 'string', 'missing name')
+  assert(typeof render === 'function', 'missing render function')
+  Nanocomponent.call(this, name)
+  this._render = render
+  var ctx = this
   this.createElement = function () {
-    var args = Array.prototype.slice.call(arguments);
-    return render.apply(undefined, [ctx].concat(args));
-  };
+    var args = Array.prototype.slice.call(arguments)
+    return render.apply(undefined, [ctx].concat(args))
+  }
 }
 
 /**
  * Mixin both Nanocomponent and Nanologger on Context prototype tree
  */
 
-Context.prototype = Object.create(Nanocomponent.prototype);
+Context.prototype = Object.create(Nanocomponent.prototype)
 
 /**
  * Default to shallow diff and capture arguments on update
  */
 
 Context.prototype.update = function () {
-  var result;
-  var args = Array.prototype.slice.call(arguments);
+  var result
+  var args = Array.prototype.slice.call(arguments)
 
   if (this._update) {
-    result = this._update(this, args, this._arguments);
+    result = this._update(this, args, this._arguments)
   } else {
-    result = diff(args, this._arguments);
+    result = diff(args, this._arguments)
   }
 
-  this._arguments = args;
+  this._arguments = args
 
-  return result;
-};
+  return result
+}
 
 /**
  * Pluck out lifecycle hooks from element and attach to self
  */
 
 Context.prototype._handleRender = function (args) {
-  var ctx = this;
-  var el = Nanocomponent.prototype._handleRender.call(this, args);
+  var ctx = this
+  var el = Nanocomponent.prototype._handleRender.call(this, args)
 
   HOOKS.forEach(function (key) {
-    var hook = el['on' + key];
+    var hook = el['on' + key]
+
     if (hook) {
       ctx[key] = function () {
+        return hook.apply(undefined, [ctx].concat(ctx._arguments))
+      }
         return hook.apply(undefined, [ctx].concat(ctx._arguments));
       };
       el['on' + hook] = null;
     }
-  });
+  })
 
   if (el.onupdate) {
-    this._update = el.onupdate.bind(undefined);
-    el.onupdate = null;
+    this._update = el.onupdate.bind(undefined)
+    el.onupdate = null
   }
 
-  return el;
-};
+  return el
+}
 
 /**
  * Simple shallow diff of two sets of arguments
@@ -125,9 +128,9 @@ Context.prototype._handleRender = function (args) {
  * @returns {boolean}
  */
 
-function diff(args, prev) {
+function diff (args, prev) {
   // A different set of arguments issues a rerender
-  if (args.length !== prev.length) { return true; }
+  if (args.length !== prev.length) { return true }
 
   // Check for shallow diff in list of arguments
   return args.reduce(function (diff, arg, index) {
@@ -139,7 +142,7 @@ function diff(args, prev) {
       return diff || arg.toString() !== prev[index].toString();
     } else {
       // Just plain compare
-      return diff || arg !== prev[index];
+      return diff || arg !== prev[index]
     }
-  }, false);
+  }, false)
 }
