@@ -1,14 +1,14 @@
 {
   "name": "fun-component-expandable",
   "scripts": {
-    "start": "budo index.js --title 'Expandable Example | fun-component' --css index.css -- -t envify",
-    "deploy": "now -e FUN_COMPONENT=fun-component --alias fun-component-expandable.now.sh -f"
+    "start": "budo index.js --title 'Expandable Example | fun-component' --css index.css",
+    "deploy": "now"
   },
   "dependencies": {
     "bel": "*",
     "budo": "*",
-    "envify": "*",
     "fun-component": "*",
+    "markdown-it": "*",
     "nanomorph": "*"
   }
 }

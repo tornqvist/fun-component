@@ -9,9 +9,85 @@ html {
 }
 
 .App {
+  display: flex;
+  flex-direction: column;
   height: 100%;
   padding: 0 5vw;
   color: #222;
   font-size: 16px;
   font-family: monospace;
+}
+
+.App-container {
+  flex-grow: 1;
+}
+
+.Button {
+  flex: 0 0 auto;
+  display: block;
+  width: 100%;
+  padding: 12px 24px;
+  border: 3px solid #222;
+  margin: 16px 0;
+  color: #fff;
+  font-size: 16px;
+  font-family: inherit;
+  background: #222;
+  appearence: none;
+  border-radius: 0;
+}
+
+.Button--invert {
+  border-color: #222;
+  background-color: #fff;
+  color: #222;
+}
+
+.Button--inline {
+  flex: 0 0 auto;
+  display: inline-block;
+  width: auto;
+}
+
+.Header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 40px;
+}
+
+.Header-title {
+  font-size: 36px;
+}
+
+.Text {
+  display: block;
+  width: 100%;
+  padding: 16px;
+  border: 3px solid currentColor;
+  resize: vertical;
+  font-family: monospace;
+  font-size: 16px;
+}
+
+.Output {
+  margin: 24px 0;
+}
+
+.Output h1:not(:first-child),
+.Output h2:not(:first-child),
+.Output h3:not(:first-child),
+.Output h4:not(:first-child),
+.Output h5:not(:first-child),
+.Output h6:not(:first-child),
+.Output ol:not(:first-child),
+.Output ul:not(:first-child),
+.Output hr:not(:first-child),
+.Output p:not(:first-child) {
+  margin: 1.5em 0;
+}
+
+.Output hr {
+  border-top: 3px dashed currentColor;
+  backgorund: transparent;
 }

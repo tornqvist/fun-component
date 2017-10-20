@@ -3,13 +3,14 @@
 const html = require('bel')
 const { elements } = require('periodic-table')
 const morph = require('nanomorph')
-const component = require(process.env.FUN_COMPONENT)
+const component = require('fun-component')
+const spawn = require('fun-component/spawn')
 
 /**
- * Generic element component
+ * Generic row component
  */
 
-const element = component(function element (props) {
+const row = component(function element (ctx, props) {
   return html`
     <tr class="List-item" onupdate=${update}>
       <td class="List-data">${props.atomicNumber}</td>
@@ -20,14 +21,23 @@ const element = component(function element (props) {
 })
 
 /**
+ * Use atomic number as key for component context
+ */
+
+row.use(spawn(props => props.atomicNumber))
+
+/**
  * Freeze element in position and translate into its new position
- * @param {HTMLElement} element
+ * @param {component.Context} ctx
+ * @param {array} [, index, done] Latest arguments
+ * @param {array} [, prev] Previous arguments
  * @return {boolean} Prevent component from re-rendering
  */
 
-function update (element, [, index, done], [, prev]) {
+function update (ctx, [, index, done], [, prev]) {
   if (index === prev) { return false }
 
+  const { element } = ctx
   const from = element.offsetTop
 
   window.requestAnimationFrame(() => {
@@ -89,7 +99,7 @@ function view (order = byNumber, reverse = false, inTransition = false) {
           </tr>
         </thead>
         <tbody>
-          ${items.map((props, index) => element.use(props.name.toLowerCase(), props, index, done))}
+          ${items.map((props, index) => row(props, index, done))}
         </tbody>
       </table>
     </body>

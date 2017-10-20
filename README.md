@@ -183,9 +183,12 @@ For example implementations, see [/examples](/examples). Either spin them up loc
 - Mapbox (using [cache](cache))
   - `npm run example:mapbox`
   - https://fun-component-mapbox.now.sh
-- List (creating instances with `use`)
+- List (using [spawn](spawn))
   - `npm run example:list`
   - https://fun-component-list.now.sh
+- Expandable (using [spawn](spawn) and [restate](restate))
+  - `npm run example:expandable`
+  - https://fun-component-expandable.now.sh
 
 ## Why tho?
 
