@@ -3,6 +3,10 @@
 var html = require('bel');
 var test = require('tape');
 var component = require('../');
+var cache = require('../cache');
+var logger = require('../logger');
+var restate = require('../restate');
+var spawn = require('../spawn');
 
 test('browser', function (t) {
   t.test('render', function (t) {
@@ -11,7 +15,7 @@ test('browser', function (t) {
     t.plan(1);
     t.equal(
       render('world').toString(),
-      greeting('world').toString(),
+      greeting({}, 'world').toString(),
       'output match'
     );
   });
@@ -25,9 +29,7 @@ test('browser', function (t) {
       afterupdate: 0
     };
 
-    var self;
-    var render = component(function hooks(name) {
-      self = this;
+    var render = component(function hooks(ctx, name) {
       return html`
         <div onupdate=${ update } onbeforerender=${ beforerender } onload=${ load } onunload=${ unload } onafterupdate=${ afterupdate }>
           Hello ${ name }!
@@ -38,17 +40,15 @@ test('browser', function (t) {
     var node = render('world');
     var container = createContainer(node);
 
-    function load(element, str) {
+    function load(ctx, str) {
       state.load += 1;
-      t.equal(self, this, 'context is same');
-      t.equal(element, node, 'load recived element');
+      t.ok(ctx instanceof component.Context, 'context is first argument');
       t.equal(str, 'world', 'arguments forwarded to load');
       render('Jane');
     }
-    function unload(element, str) {
+    function unload(ctx, str) {
       state.unload += 1;
-      t.equal(self, this, 'context is same');
-      t.equal(element, node, 'unload recived element');
+      t.ok(ctx instanceof component.Context, 'context is first argument');
       t.equal(str, 'Jane', 'arguments forwarded to unload');
       t.deepEqual(state, {
         load: 1,
@@ -59,66 +59,151 @@ test('browser', function (t) {
       }, 'all lifecycle hooks fired');
       t.end();
     }
-    function update(element, args, prev) {
+    function update(ctx, args, prev) {
       state.update += 1;
-      t.equal(self, this, 'context is same');
-      t.equal(element, node, 'update recived element');
+      t.ok(ctx instanceof component.Context, 'context is first argument');
       t.equal(args[0], 'Jane', 'arguments forwarded to update');
       t.equal(prev[0], 'world', 'prev arguments forwarded to update');
       return true;
     }
-    function beforerender(element, str) {
+    function beforerender(ctx, str) {
       state.beforerender += 1;
-      t.equal(self, this, 'context is same');
-      t.ok(element instanceof HTMLElement, 'beforerender recived (an) element');
+      t.ok(ctx instanceof component.Context, 'context is first argument');
       t.equal(str, 'world', 'arguments forwarded to beforerender');
     }
-    function afterupdate(element, str) {
+    function afterupdate(ctx, str) {
       state.afterupdate += 1;
-      t.equal(self, this, 'context is same');
-      t.equal(element, node, 'afterupdate recived element');
+      t.ok(ctx instanceof component.Context, 'context is first argument');
       t.equal(str, 'Jane', 'arguments forwarded to afterupdate');
-      requestAnimationFrame(() => container.removeChild(node));
+      requestAnimationFrame(function () {
+        container.removeChild(node);
+      });
     }
   });
 
-  t.test('child instances', function (t) {
-    var self;
-    var parent = component(function parent() {
-      self = self || this;
-      return html`<div id="${ this._name }"></div>`;
+  t.test('plugin: cache', function (t) {
+    t.plan(6);
+    var element;
+    var loaded = false;
+    var render = component(function (ctx, str) {
+      if (!loaded) {
+        t.ok(typeof ctx.cached === 'undefined', 'ctx.cached is unset');
+      }
+
+      var el = greeting(ctx, str);
+      el.onload = function (ctx) {
+        if (!loaded) {
+          t.equal(ctx.cached, element, 'element is cached');
+        }
+        loaded = true;
+      };
+
+      return el;
     });
 
-    t.throws(parent.create, 'throws w/o key');
+    render.use(cache());
+    element = render('world');
 
-    var child = parent.create('child');
+    // Mount and await next frame
+    var container = createContainer(element);
+    requestAnimationFrame(function () {
+      // Unmount and wait another frame
+      container.removeChild(element);
 
-    t.throws(parent.create.bind(parent, 'child'), 'throws w/ existing key');
-    t.equal(parent.name, 'parent', 'function name intact');
-    t.equal(child._name, 'parent_child', 'instance name extended');
-    t.equal(child, parent.get('child'), 'got child');
-    t.equal(typeof parent.get('nope'), 'undefined', 'child does not exist');
+      requestAnimationFrame(function () {
+        // Render element from cache
+        t.equal(element, render('again'), 'element is the same');
 
-    var node1 = parent();
-    var node2 = child.render();
-    var container = createContainer(node1);
-    container.appendChild(node2);
+        // It should not have updated since it's not in the DOM atm
+        t.notEqual(element.innerText, 'Hello again!', 'element did not update');
 
-    t.equal(self, parent.get(), 'no argument returns self');
-    t.false(node1.isSameNode(node2), 'different node created');
-    t.true(parent.use('child').isSameNode(node2), 'use renders child');
+        // Mount yet again
+        createContainer(element);
+        requestAnimationFrame(function () {
+          // Issue an update with new arguments
+          t.ok(render('again').isSameNode(element), 'proxy node was returned');
 
-    parent.delete('child');
-    t.equal(typeof parent.get('child'), 'undefined', 'child does not exist');
-    t.throws(parent.delete, 'throws w/o key');
-    t.throws(parent.delete.bind(parent, 'child'), 'throws w/ unknown key');
+          // It should have been updated now that it is in the DOM
+          t.equal(element.innerText, 'Hello again!', 'element did update');
+        });
+      });
+    });
+  });
 
-    t.true(parent.use('child') instanceof Element, 'use creates child');
-    t.end();
+  t.test('plugin: logger', function (t) {
+    t.plan(2);
+    var render = component(greeting);
+    render.use(logger());
+    render.use(function (ctx) {
+      ctx.log._print = function (level) {
+        t.equal(level, 'debug', 'debug on ' + (ctx.element ? 'update' : 'render'));
+      };
+      return ctx;
+    });
+    createContainer(render('world'));
+    render('again');
+  });
+
+  t.test('plugin: restate', function (t) {
+    t.plan(4);
+    var render = component(function (ctx) {
+      var element = greeting(ctx, ctx.state.name);
+      element.onload = onload;
+      return element;
+    });
+
+    render.use(restate({ name: 'world' }));
+    var element = render();
+    t.equal(element.innerText, 'Hello world!', 'initial state applied');
+
+    createContainer(element);
+    requestAnimationFrame(function () {
+      t.equal(element.innerText, 'Hello again!', 'state updated');
+    });
+
+    function onload(ctx) {
+      t.ok(typeof ctx.state === 'object', 'state in context');
+      t.ok(typeof ctx.restate === 'function', 'restate in context');
+      ctx.restate({ name: 'again' });
+    }
+  });
+
+  t.test('plugin: spawn', function (t) {
+    t.plan(4);
+    var cache = {};
+    var render = component(function (ctx, id) {
+      var element = greeting(ctx, id);
+      element.onload = function (ctx, id) {
+        if (cache[id]) {
+          t.notEqual(ctx._ncID, cache[id], 'spawn ' + id + ' was discarded');
+        }
+        cache[id] = ctx._ncID;
+      };
+      return element;
+    });
+
+    t.throws(spawn, 'identity fn is required');
+    render.use(spawn(function (id) { return id; }));
+    var one = render('one');
+    var two = render('two');
+    var container = createContainer();
+
+    container.appendChild(one);
+    container.appendChild(two);
+    requestAnimationFrame(function () {
+      t.notEqual(cache.one, cache.two, 'two contexts spawned');
+      container.removeChild(one);
+      container.removeChild(two);
+
+      requestAnimationFrame(function () {
+        container.appendChild(render('one'));
+        container.appendChild(render('two'));
+      });
+    });
   });
 });
 
-function greeting(name) {
+function greeting(ctx, name) {
   return html`
     <div>
       <h1>Hello ${ name }!</h1>

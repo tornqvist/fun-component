@@ -29,9 +29,10 @@ function component(name, render) {
     var args = Array.prototype.slice.call(arguments);
 
     return middleware.concat(function (ctx) {
+      assert(typeof ctx.render === 'function', 'plugin must return context');
       return ctx.render.apply(ctx, args);
     }).reduce(function (ctx, plugin) {
-      return plugin(ctx, args);
+      return plugin.apply(undefined, [ctx].concat(args));
     }, context);
   }
 

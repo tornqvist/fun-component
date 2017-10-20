@@ -3,19 +3,19 @@ module.exports = function init() {
     var callback;
 
     if (!ctx.cached) {
-      Object.defineProperties(ctx, 'load', {
+      Object.defineProperty(ctx, 'load', {
         configurable: true,
         enumerable: true,
         set: function (fn) { callback = fn; },
         get: function () { return load; }
       });
 
-      var createElement = ctx.createElement;
-      ctx.createElement = function () {
+      var render = ctx.render;
+      ctx.render = function () {
         if (!ctx._loaded && ctx.cached) {
           return ctx.cached;
         }
-        return createElement.apply(ctx, Array.prototype.slice.call(arguments));
+        return render.apply(ctx, Array.prototype.slice.call(arguments));
       };
     }
 

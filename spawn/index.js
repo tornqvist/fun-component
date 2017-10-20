@@ -6,10 +6,11 @@ module.exports = function init(identity) {
 
   var cache = {};
 
-  return function spawn(source, args) {
+  return function spawn(source) {
     var callback;
     var name = source._name;
     var render = source._render;
+    var args = Array.prototype.slice.call(arguments, 1);
     var key = identity.apply(undefined, args);
 
     assert(key, 'could not identify key');

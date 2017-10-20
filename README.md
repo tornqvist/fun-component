@@ -102,7 +102,7 @@ component(function greeting(ctx, title) {
   return html`<h1 onupdate=${ update }>Hello ${ title }!</h1>`
 })
 
-// Deconstruct arguments and compare the `title` argument
+// Deconstruct arguments and compare `title`
 function update(ctx, [next], [prev]) {
   return next !== prev
 }

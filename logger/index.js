@@ -9,7 +9,7 @@ module.exports = function init(options) {
 
       var _handleRender = ctx._handleRender;
       ctx._handleRender = function (args) {
-        ctx.log.debug(ctx.element ? 'update' : 'create', args);
+        ctx.log.debug(ctx.element ? 'update' : 'render', args);
         var el = _handleRender.call(ctx, args);
         HOOKS.forEach(function (key) {
           var hook = ctx[key];
