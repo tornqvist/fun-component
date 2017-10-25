@@ -1,6 +1,6 @@
 {
   "name": "fun-component",
-  "version": "3.0.0-1",
+  "version": "3.0.0",
   "description": "Functional approach to authoring performant HTML components using plugins",
   "main": "index.js",
   "scripts": {
