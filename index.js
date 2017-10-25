@@ -8,13 +8,8 @@ var HOOKS = ['load', 'unload', 'beforerender', 'afterupdate', 'afterreorder']
 module.exports = component
 module.exports.Context = Context
 
-/**
- * Create a functional wrapper for nanocomponent
- * @param {any} name Explicit name or render function
- * @param {function} [render] Create an HTMLElement
- * @returns {function} Renders component
- */
-
+// create a function that proxies nanocomponent
+// (str, fn) -> fn
 function component (name, render) {
   if (typeof name === 'function') {
     render = name
@@ -47,13 +42,8 @@ function component (name, render) {
   return renderer
 }
 
-/**
- * Custom extention of Nanocomponent
- *
- * @param {string} name Component name
- * @param {function} render Should return Element
- */
-
+// custom extension of nanocomponent
+// (str, fn) -> Context
 function Context (name, render) {
   assert(typeof name === 'string', 'missing name')
   assert(typeof render === 'function', 'missing render function')
@@ -66,16 +56,10 @@ function Context (name, render) {
   }
 }
 
-/**
- * Mixin both Nanocomponent and Nanologger on Context prototype tree
- */
-
 Context.prototype = Object.create(Nanocomponent.prototype)
 
-/**
- * Default to shallow diff and capture arguments on update
- */
-
+// default to shallow diff and capture arguments on update
+// (...args) -> bool
 Context.prototype.update = function () {
   var result
   var args = Array.prototype.slice.call(arguments)
@@ -91,10 +75,8 @@ Context.prototype.update = function () {
   return result
 }
 
-/**
- * Pluck out lifecycle hooks from element and attach to self
- */
-
+// pluck out lifecycle hooks from element and attach to self
+// arr -> Element
 Context.prototype._handleRender = function (args) {
   var ctx = this
   var el = Nanocomponent.prototype._handleRender.call(this, args)
@@ -118,25 +100,19 @@ Context.prototype._handleRender = function (args) {
   return el
 }
 
-/**
- * Simple shallow diff of two sets of arguments
- *
- * @param {array} args
- * @param {array} prev
- * @returns {boolean}
- */
-
+// simple shallow diff of two sets of arguments
+// (arr, arr) -> bool
 function diff (args, prev) {
-  // A different set of arguments issues a rerender
+  // different set of arguments issues a rerender
   if (args.length !== prev.length) { return true }
 
-  // Check for shallow diff in list of arguments
+  // check for shallow diff in list of arguments
   return args.reduce(function (diff, arg, index) {
     if (arg.isSameNode) {
-      // Handle argument being an element
+      // handle argument being an element
       return diff || !arg.isSameNode(prev[index])
     } else {
-      // Just plain compare
+      // just compare
       return diff || arg !== prev[index]
     }
   }, false)
