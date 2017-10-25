@@ -1,13 +1,12 @@
 {
   "name": "fun-component-list",
   "scripts": {
-    "start": "budo index.js --title 'List Example | fun-component' --css index.css -- -t envify",
-    "deploy": "now -e FUN_COMPONENT=fun-component --alias fun-component-list.now.sh -f"
+    "start": "budo index.js --title 'List Example | fun-component' --css index.css",
+    "deploy": "now"
   },
   "dependencies": {
     "bel": "*",
     "budo": "*",
-    "envify": "*",
     "fun-component": "*",
     "nanomorph": "*",
     "periodic-table": "0.0.8"

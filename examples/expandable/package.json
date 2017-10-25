@@ -1,0 +1,14 @@
+{
+  "name": "fun-component-expandable",
+  "scripts": {
+    "start": "budo index.js --title 'Expandable Example | fun-component' --css index.css",
+    "deploy": "now"
+  },
+  "dependencies": {
+    "bel": "*",
+    "budo": "*",
+    "fun-component": "*",
+    "markdown-it": "*",
+    "nanomorph": "*"
+  }
+}
