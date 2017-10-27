@@ -9,20 +9,20 @@ const html = require('bel')
 const component = require('fun-component')
 const restate = require('fun-component/restate')
 
-const render = component(function expandable(ctx, text) {
+const render = component(function expandable (ctx, text) {
   const toggle = () => ctx.restate({ expanded: !ctx.state.expanded })
 
   html`
     <div>
-      <button onclick=${ toggle }>${ ctx.state.expanded ? 'Close' : 'Open' }</button>
-      <p style="display: ${ ctx.state.expanded ? 'block' : 'none' };">
-        ${ text }
+      <button onclick=${toggle}>${ctx.state.expanded ? 'Close' : 'Open'}</button>
+      <p style="display: ${ctx.state.expanded ? 'block' : 'none'};">
+        ${text}
       </p>
     </div>
   `
 })
 
-// Set initial state of exandables to be collapsed
+// set initial state of exandables to be collapsed
 render.use(restate({ expanded: false }))
 
 document.body.appendChild(render('Hi there!'))

@@ -9,24 +9,24 @@ const html = require('bel')
 const component = require('fun-component')
 const spawn = require('fun-component/spawn')
 
-const article = component(function article(ctx, props) {
+const article = component(function article (ctx, props) {
   return html`
     <article>
-      <img src="${ props.img.src }" alt="${ props.img.alt }">
-      <h2>${ props.title }</h2>
-      <p>${ props.intro }</p>
-      <a href="/articles/${ props.id }">Read more</a>
+      <img src="${props.img.src}" alt="${props.img.alt}">
+      <h2>${props.title}</h2>
+      <p>${props.intro}</p>
+      <a href="/articles/${props.id}">Read more</a>
     </article>
   `
 })
 
-// Use `props.id` as key to identify context
+// use `props.id` as key to identify context
 article.use(spawn(props => props.id))
 
-function list(items) {
+function list (items) {
   return html`
     <main>
-      ${ items.map(item => article(item)) }
+      ${items.map(item => article(item))}
     </main>
   `
 }

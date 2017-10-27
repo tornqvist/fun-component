@@ -1,9 +1,14 @@
-# fun-component [![stability](https://img.shields.io/badge/stability-experimental-orange.svg?style=flat-square)](https://nodejs.org/api/documentation.html#documentation_stability_index)
+<div align="center">
 
-[![npm version](https://img.shields.io/npm/v/fun-component.svg?)](https://npmjs.org/package/fun-component) [![build status](https://img.shields.io/travis/tornqvist/fun-component/master.svg?style=flat-square)](https://travis-ci.org/tornqvist/fun-component)
+# fun-component
+
+[![npm version](https://img.shields.io/npm/v/fun-component.svg?style=flat-square)](https://npmjs.org/package/fun-component) [![build status](https://img.shields.io/travis/tornqvist/fun-component/master.svg?style=flat-square)](https://travis-ci.org/tornqvist/fun-component)
 [![downloads](http://img.shields.io/npm/dm/fun-component.svg?style=flat-square)](https://npmjs.org/package/fun-component)
+[![style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat-square)](https://npmjs.org/package/fun-component)
 
-A pure functional approach to authoring performant HTML components using plugins to extend functionality. Syntactic suggar on top of [nanocomponent](https://github.com/choojs/nanocomponent). Pass in a function and get another function back that handles rerendering as needed when called upon.
+</div>
+
+A functional approach to authoring performant HTML components using plugins. Syntactic suggar on top of [nanocomponent](https://github.com/choojs/nanocomponent). Pass in a function and get another function back that handles rerendering as needed when called upon.
 
 - [Usage](#usage)
 - [API](#api)
@@ -22,10 +27,10 @@ The most straightforward use is to pass in a function and have the default shall
 const html = require('bel')
 const component = require('fun-component')
 
-module.exports = component(function button(ctx, clicks, onclick) {
+module.exports = component(function button (ctx, clicks, onclick) {
   return html`
-    <button onclick=${ onclick }>
-      Clicked ${ clicks } times
+    <button onclick=${onclick}>
+      Clicked ${clicks} times
     </button>
   `
 })
@@ -34,16 +39,17 @@ module.exports = component(function button(ctx, clicks, onclick) {
 ```javascript
 // app.js
 const choo = require('choo')
+const html = require('choo/html')
 const button = require('./button')
 
 const app = choo()
 app.route('/', view)
 app.mount('body')
 
-function view(state, emit) {
+function view (state, emit) {
   return html`
     <body>
-      ${ button(state.clicks, () => emit('click')) }
+      ${button(state.clicks, () => emit('click'))}
     </body>
   `
 }
@@ -55,6 +61,22 @@ app.use(function (state, emitter) {
     emitter.emit(state.events.RENDER)
   })
 })
+```
+
+### Standalone
+
+Though fun-component was authored with [choo](https://github.com/choojs/choo) in mind it works just as well standalone!
+
+```javascript
+const button = require('./button')
+
+let clicks = 0
+function onclick () {
+  clicks += 1
+  button(clicks, onclick)
+}
+
+document.body.appendChild(button(clicks, onclick))
 ```
 
 ## API
@@ -77,7 +99,7 @@ The component context (`ctx`) is prefixed to the arguments of all lifecycle hook
 ```javascript
 // Exposing nanocomponent inner workings
 component(function echo(ctx) {
-  return html`<h1>I'm ${ ctx._name } on the ${ ctx._hasWindow ? 'client' : 'server' }</h1>`
+  return html`<h1>I'm ${ctx._name} on the ${ctx._hasWindow ? 'client' : 'server'}</h1>`
 })
 ```
 
@@ -99,7 +121,7 @@ Opposed to how nanocomponent calls the update function to detemrine whether to r
 
 ```javascript
 component(function greeting(ctx, title) {
-  return html`<h1 onupdate=${ update }>Hello ${ title }!</h1>`
+  return html`<h1 onupdate=${update}>Hello ${title}!</h1>`
 })
 
 // Deconstruct arguments and compare `title`
@@ -115,58 +137,56 @@ Using every lifecycle hook available. The rendered element can be accessed on th
 ```javascript
 component(function hooks(ctx, title) {
   return html`
-    <div onupdate=${ update } onbeforerender=${ beforerender } onload=${ load } onunload=${ unload } onafterupdate=${ afterupdate } onafterreorder=${ afterreorder }>
-      Hello ${ title }!
+    <div onupdate=${update} onbeforerender=${beforerender} onload=${load} onunload=${unload} onafterupdate=${afterupdate} onafterreorder=${afterreorder}>
+      Hello ${title}!
     </div>
   `
 })
 
 function update(ctx, [title], [prev]) {
-  console.log(`diffing ${ title } and ${ prev }`)
+  console.log(`diffing ${title} and ${prev}`)
   return title !== prev
 }
 
 function beforerender(ctx, title) {
-  console.log(`will render with ${ title }`)
+  console.log(`will render with ${title}`)
 }
 
 function load(ctx, title) {
-  console.log(ctx.element, `mounted in DOM with ${ title }`)
+  console.log(ctx.element, `mounted in DOM with ${title}`)
 }
 
 function unload(ctx, title) {
-  console.log(ctx.element, `removed from DOM with ${ title }`)
+  console.log(ctx.element, `removed from DOM with ${title}`)
 }
 
 function afterupdate(ctx, title) {
-  console.log(`updated with ${ title }`)
+  console.log(`updated with ${title}`)
 }
 
 function afterreorder(ctx, title) {
-  console.log(`reordered with ${ title }`)
+  console.log(`reordered with ${title}`)
 }
 ```
 
 ### Plugins
 
-Plugins are middlware functions that are called just before the component is rendered or updated. A plugin can inspect the arguments, modify the context object or even return another context object that is to be used for rendering the component.
+Plugins are middleware functions that are called just before the component is rendered or updated. A plugin can inspect the arguments, modify the context object or even return another context object that is to be used for rendering the component.
 
 ```javascript
 const html = require('bel')
 const component = require('fun-component')
 
 const greeter = component(function greeting(ctx, title) {
-  return html`<h1>Hello ${ title }!</h1>`
+  return html`<h1>Hello ${title}!</h1>`
 })
 
-greeter.use(log)
+greeter.use(function log(ctx, title) {
+  console.log(`Rendering ${ctx._ncID} with ${title}`)
+  return ctx
+})
 
 document.body.appendChild(greeter('world'))
-
-function log(ctx, title) {
-  console.log(`Rendering ${ ctx._ncID } with ${ title }`)
-  return ctx
-}
 ```
 
 fun-component is bundled with with a handfull of plugins that cover the most common scenarios. Have you written a plugin you want featured in this list? Fork, add, and make a pull request!

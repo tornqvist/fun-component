@@ -11,29 +11,29 @@ const html = require('bel')
 const component = require('fun-component')
 const cache = require('fun-component/cache')
 
-const render = component(function map(ctx, coordinates) {
+const render = component(function map (ctx, coordinates) {
   return html`
-    <div class="Map" onupdate=${ update } onload=${ load }>
+    <div class="Map" onupdate=${update} onload=${load}>
     </div>
   `
 })
 
-// Register cache middleware
+// register cache middleware
 render.use(cache())
 
-function update(ctx, [coordinates], [prev]) {
+function update (ctx, [coordinates], [prev]) {
   if (coordinates.lng !== prev.lng || coordinates.lat !== prev.lat) {
     ctx.map.setCenter([coordinates.lng, coordinates.lat])
   }
   return false
 }
 
-function load(ctx, coordinates) {
+function load (ctx, coordinates) {
   if (ctx.map) {
-    // Recenter if map has already been initialized
+    // recenter if map has already been initialized
     ctx.map.setCenter([coordinates.lng, coordinates.lat]).resize()
   } else {
-    // Initialize map with new element
+    // initialize map with new element
     ctx.map = new mapboxgl.Map({
       container: ctx.element,
       center: [coordinates.lng, coordinates.lat],
@@ -55,17 +55,17 @@ const html = require('bel')
 const component = require('fun-component')
 const cache = require('fun-component/cache')
 
-const render = component(function uncached(ctx) {
-  return html`<div onunload=${ unload }></div>`
+const render = component(function uncached (ctx) {
+  return html`<div onunload=${unload}></div>`
 })
 
-// Register cache middleware
+// register cache middleware
 render.use(cache())
 
-function unload(ctx) {
+function unload (ctx) {
   if (someCondition) {
-    // Unset cache to create a new element on next render
-    delete ctx.cached;
+    // unset cache to create a new element on next render
+    delete ctx.cached
   }
 }
 ```

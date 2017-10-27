@@ -109,7 +109,7 @@ function diff (args, prev) {
   // check for shallow diff in list of arguments
   return args.reduce(function (diff, arg, index) {
     if (arg.isSameNode) {
-      // handle argument being an element
+      // handle argument being an element (or proxy)
       return diff || !arg.isSameNode(prev[index])
     } else {
       // just compare
