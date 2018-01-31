@@ -1,8 +1,23 @@
 {
   "name": "fun-component-expandable",
   "scripts": {
-    "start": "budo index.js --title 'Expandable Example | fun-component' --css index.css",
-    "deploy": "now"
+    "prestart": "npm install",
+    "start": "budo index.js --title 'Expandable Example | fun-component' --css index.css"
+  },
+  "browserify": {
+    "development": [
+      [
+        "aliasify",
+        {
+          "aliases": {
+            "fun-component": "../.."
+          }
+        }
+      ]
+    ]
+  },
+  "devDependencies": {
+    "aliasify": "*"
   },
   "dependencies": {
     "bel": "*",

@@ -1,8 +1,23 @@
 {
   "name": "fun-component-list",
   "scripts": {
-    "start": "budo index.js --title 'List Example | fun-component' --css index.css",
-    "deploy": "now"
+    "prestart": "npm install",
+    "start": "budo index.js --title 'List Example | fun-component' --css index.css"
+  },
+  "browserify": {
+    "development": [
+      [
+        "aliasify",
+        {
+          "aliases": {
+            "fun-component": "../.."
+          }
+        }
+      ]
+    ]
+  },
+  "devDependencies": {
+    "aliasify": "*"
   },
   "dependencies": {
     "bel": "*",

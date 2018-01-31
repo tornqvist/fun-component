@@ -1,8 +1,23 @@
 {
   "name": "fun-component-mapbox",
   "scripts": {
-    "start": "budo index.js --pushstate --title 'Mapbox Example | fun-component' --css index.css",
-    "deploy": "now"
+    "prestart": "npm install",
+    "start": "budo index.js --pushstate --title 'Mapbox Example | fun-component' --css index.css"
+  },
+  "browserify": {
+    "development": [
+      [
+        "aliasify",
+        {
+          "aliases": {
+            "fun-component": "../.."
+          }
+        }
+      ]
+    ]
+  },
+  "devDependencies": {
+    "aliasify": "*"
   },
   "dependencies": {
     "bel": "*",
