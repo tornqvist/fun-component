@@ -1,6 +1,5 @@
 var assert = require('nanoassert')
 var Nanocomponent = require('nanocomponent')
-var setName = require('function-name')
 
 var NAME = 'fun-component'
 var HOOKS = ['load', 'unload', 'beforerender', 'afterupdate', 'afterreorder']
@@ -13,13 +12,12 @@ module.exports.Context = Context
 function component (name, render) {
   if (typeof name === 'function') {
     render = name
-    name = Object.getOwnPropertyDescriptor(render, 'name').value || NAME
+    name = render.name || NAME
   }
 
   var middleware = []
   var context = new Context(name, render)
 
-  setName(renderer, name)
   function renderer () {
     var args = Array.prototype.slice.call(arguments)
 
@@ -33,6 +31,13 @@ function component (name, render) {
 
   Object.defineProperty(renderer, 'use', {
     get: function () { return use }
+  })
+
+  Object.defineProperty(renderer, 'name', {
+    value: name,
+    writable: false,
+    enumerable: false,
+    configurable: true
   })
 
   function use (fn) {
