@@ -1,5 +1,3 @@
-# Libraries
 node_modules
-
-# Environment
 .vscode
+package-lock.json
