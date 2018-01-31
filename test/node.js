@@ -93,7 +93,7 @@ test('server side render', function (t) {
     t.throws(render.bind(undefined, 'world'), 'throws w/o context')
   })
 
-  t.test('original render minnerethod in context', function (t) {
+  t.test('original render function in context', function (t) {
     t.plan(1)
     var render = component(greeting)
     render.use(function (ctx) {
