@@ -19,14 +19,13 @@ function component (name, render) {
   var context = new Context(name, render)
 
   function renderer () {
+    var ctx = context
     var args = Array.prototype.slice.call(arguments)
-
-    return middleware.concat(function (ctx) {
-      assert(typeof ctx.render === 'function', 'plugin must return context')
+    for (var i = 0, len = middleware.length; i < len; i++) {
+      ctx = middleware[i].apply(undefined, [ctx].concat(args)) || ctx
+      assert(typeof ctx.render === 'function', 'fun-component: plugin should return a component context')
+    }
       return ctx.render.apply(ctx, args)
-    }).reduce(function (ctx, plugin) {
-      return plugin.apply(undefined, [ctx].concat(args))
-    }, context)
   }
 
   Object.defineProperty(renderer, 'use', {
