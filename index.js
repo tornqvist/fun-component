@@ -61,6 +61,7 @@ function Context (name, render) {
 }
 
 Context.prototype = Object.create(Nanocomponent.prototype)
+Context.prototype.contructor = Context
 
 // default to shallow diff and capture arguments on update
 // (...args) -> bool
