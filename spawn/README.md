@@ -34,9 +34,9 @@ function list (items) {
 
 ## API
 
-### `spawn(identity<function>)`
+### `spawn(identity[, cache])`
 
-Create a middleware function that spawns a new context identified by key. Takes a function as only argument.
+Create a middleware function that spawns a new context identified by key. Takes a function as first argument, and optionally a cache object as second.
 
 The function passed to spawn should return a unique key that is used to identify which context to use for rendering. The identity function will be called whenever the component needs to render or update. The arguments used to call the component are forwarded to the identity function for you to use to determine the key.
 

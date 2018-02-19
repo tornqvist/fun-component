@@ -86,13 +86,6 @@ test('server side render', function (t) {
     render('world')
   })
 
-  t.test('throws when plugin does not return', function (t) {
-    t.plan(1)
-    var render = component(greeting)
-    render.use(function noop () {})
-    t.throws(render.bind(undefined, 'world'), 'throws w/o context')
-  })
-
   t.test('original render function in context', function (t) {
     t.plan(1)
     var render = component(greeting)

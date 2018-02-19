@@ -1,32 +1,33 @@
 var Nanologger = require('nanologger')
 
-var HOOKS = ['load', 'unload', 'beforerender', 'afterupdate', 'afterreorder']
+var EVENTS = ['load', 'unload', 'beforerender', 'afterupdate', 'afterreorder']
 
-// add a logger to the context object
+// add logger to context and log all lifycycle event
 // obj -> fn
 module.exports = function init (options) {
   return function logger (ctx) {
     if (!ctx.log) {
       ctx.log = new Nanologger(ctx._name, options)
 
-      // proxy _handleRender capturing lifecycle hooks
-      var _handleRender = ctx._handleRender
-      ctx._handleRender = function (args) {
-        ctx.log.debug(ctx.element ? 'update' : 'render', args)
-        var el = _handleRender.call(ctx, args)
-        HOOKS.forEach(function (key) {
-          var hook = ctx[key]
-          if (hook) {
-            ctx[key] = function () {
-              ctx.log.debug(key, args)
-              return hook.apply(this, Array.prototype.slice.call(arguments))
-            }
-          }
-        })
-        return el
+      for (var i = 0, len = EVENTS.length; i < len; i++) {
+        ctx.on(EVENTS[i], createListener(EVENTS[i]))
+      }
+
+      // proxy render capturing lifecycle events
+      var render = ctx.render
+      ctx.render = function () {
+        var args = Array.prototype.slice.call(arguments)
+        if (ctx.element) ctx.log.debug('update', args)
+        var element = render.call(ctx, args)
+        if (!ctx.element) ctx.log.debug('render', args)
+        return element
       }
     }
 
-    return ctx
+    function createListener (event) {
+      return function () {
+        ctx.log.debug(event, Array.prototype.slice.call(arguments, 1))
+      }
+    }
   }
 }

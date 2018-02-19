@@ -36,7 +36,7 @@ Create a middleware that adds a `state` object and the `restate` method to conte
 
 ### `ctx.restate(next<object>)`
 
-Restate takes a new state as only argument. It updates the state and issues a rerender with the latest arguments.
+Takes a new state as only argument. It updates the state and issues a rerender with the latest arguments.
 
 ## FAQ
 

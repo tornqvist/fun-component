@@ -12,23 +12,20 @@ const component = require('fun-component')
 const cache = require('fun-component/cache')
 
 const render = component(function map (ctx, coordinates) {
-  return html`
-    <div class="Map" onupdate=${update} onload=${load}>
-    </div>
-  `
+  return html`<div class="Map"></div>`
 })
 
 // register cache middleware
 render.use(cache())
 
-function update (ctx, [coordinates], [prev]) {
+render.on('update', function (ctx, [coordinates], [prev]) {
   if (coordinates.lng !== prev.lng || coordinates.lat !== prev.lat) {
     ctx.map.setCenter([coordinates.lng, coordinates.lat])
   }
   return false
-}
+})
 
-function load (ctx, coordinates) {
+render.on('load', function (ctx, coordinates) {
   if (ctx.map) {
     // recenter if map has already been initialized
     ctx.map.setCenter([coordinates.lng, coordinates.lat]).resize()
@@ -39,7 +36,7 @@ function load (ctx, coordinates) {
       center: [coordinates.lng, coordinates.lat],
     })
   }
-}
+})
 ```
 
 ## API
@@ -56,16 +53,16 @@ const component = require('fun-component')
 const cache = require('fun-component/cache')
 
 const render = component(function uncached (ctx) {
-  return html`<div onunload=${unload}></div>`
+  return html`<div></div>`
 })
 
 // register cache middleware
 render.use(cache())
 
-function unload (ctx) {
+render.on('unload', function (ctx) {
   if (someCondition) {
     // unset cache to create a new element on next render
     delete ctx.cached
   }
-}
+})
 ```

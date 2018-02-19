@@ -2,7 +2,6 @@ var assert = require('nanoassert')
 var Nanocomponent = require('nanocomponent')
 
 var NAME = 'fun-component'
-var HOOKS = ['load', 'unload', 'beforerender', 'afterupdate', 'afterreorder']
 
 module.exports = component
 module.exports.Context = Context
@@ -25,11 +24,22 @@ function component (name, render) {
       ctx = middleware[i].apply(undefined, [ctx].concat(args)) || ctx
       assert(typeof ctx.render === 'function', 'fun-component: plugin should return a component context')
     }
-      return ctx.render.apply(ctx, args)
+    return ctx.render.apply(ctx, args)
   }
 
-  Object.defineProperty(renderer, 'use', {
-    get: function () { return use }
+  Object.defineProperties(renderer, {
+    use: {
+      get: function () { return use }
+    },
+    on: {
+      get: function () { return context.on.bind(context) }
+    },
+    off: {
+      get: function () { return context.off.bind(context) }
+    },
+    fork: {
+      get: function () { return fork }
+    }
   })
 
   Object.defineProperty(renderer, 'name', {
@@ -39,8 +49,27 @@ function component (name, render) {
     configurable: true
   })
 
+  // add plugin middleware
+  // fn -> void
   function use (fn) {
     middleware.push(fn)
+  }
+
+  // fork a component inheriting all event listeners and middleware
+  // str? -> fn
+  function fork (_name) {
+    var forked = component(_name || name, render)
+    var events = Object.keys(context._events)
+    for (var e = 0, elen = events.length, listeners, l, llen; e < elen; e++) {
+      listeners = context._events[events[e]]
+      for (l = 0, llen = listeners.length; l < llen; l++) {
+        forked.on(events[e], listeners[l])
+      }
+    }
+    for (var m = 0, mlen = middleware.length; m < mlen; m++) {
+      forked.use(middleware[m])
+    }
+    return forked
   }
 
   return renderer
@@ -49,11 +78,12 @@ function component (name, render) {
 // custom extension of nanocomponent
 // (str, fn) -> Context
 function Context (name, render) {
-  assert(typeof name === 'string', 'missing name')
-  assert(typeof render === 'function', 'missing render function')
+  assert(typeof name === 'string', 'fun-component: name should be a string')
+  assert(typeof render === 'function', 'fun-component: render should be a function')
   Nanocomponent.call(this, name)
-  this._render = render
   var ctx = this
+  this._events = {}
+  this._render = render
   this.createElement = function () {
     var args = Array.prototype.slice.call(arguments)
     return render.apply(undefined, [ctx].concat(args))
@@ -63,62 +93,77 @@ function Context (name, render) {
 Context.prototype = Object.create(Nanocomponent.prototype)
 Context.prototype.contructor = Context
 
-// default to shallow diff and capture arguments on update
-// (...args) -> bool
-Context.prototype.update = function () {
-  var result
-  var args = Array.prototype.slice.call(arguments)
+Context.prototype.update = update
 
-  if (this._update) {
-    result = this._update(this, args, this._arguments)
-  } else {
-    result = diff(args, this._arguments)
+// add lifecycle event listener
+// (str, fn) -> void
+Context.prototype.on = function (event, listener) {
+  assert(typeof event === 'string', 'fun-component: event should be a string')
+  assert(typeof listener === 'function', 'fun-component: listener should be a function')
+
+  var events = this._events[event]
+  if (!events) events = this._events[event] = []
+  events.push(listener)
+
+  if (!this[event] || (event === 'update' && this.update === update)) {
+    this[event] = function () {
+      var result
+      var args = Array.prototype.slice.call(arguments)
+      var events = this._events[event]
+
+      // compose `update` arguments for diffing
+      if (event === 'update') {
+        args = [this, args, this._arguments]
+      } else {
+        if (event === 'beforerender') args.unshift(this)
+        else args = [this]
+        args = args.concat(this._arguments)
+      }
+
+      // run through all events listeners in order, aggregating return value
+      for (var i = 0, len = events.length, next; i < len; i++) {
+        next = events[i].apply(undefined, args)
+        if (event === 'update' && i > 0) result = result || next
+        else result = next
+      }
+      if (event === 'update') return result
+    }
   }
-
-  this._arguments = args
-
-  return result
 }
 
-// pluck out lifecycle hooks from element and attach to self
-// arr -> Element
-Context.prototype._handleRender = function (args) {
-  var ctx = this
-  var el = Nanocomponent.prototype._handleRender.call(this, args)
+// remove lifecycle event listener
+// (str, fn) -> void
+Context.prototype.off = function (event, listener) {
+  assert(typeof event === 'string', 'fun-component: event should be a string')
+  assert(typeof listener === 'function', 'fun-component: listener should be a function')
 
-  HOOKS.forEach(function (key) {
-    var hook = el['on' + key]
+  var events = this._events[event]
+  if (!events) return
 
-    if (hook) {
-      ctx[key] = function () {
-        return hook.apply(undefined, [ctx].concat(ctx._arguments))
-      }
-      el['on' + key] = null
-    }
-  })
+  var index = events.indexOf(listener)
+  if (index === -1) return
 
-  if (el.onupdate) {
-    this._update = el.onupdate.bind(undefined)
-    el.onupdate = null
-  }
+  events.splice(index, 1)
 
-  return el
+  // remove depleeted listener proxy method
+  if (!events.length) delete this[event]
 }
 
 // simple shallow diff of two sets of arguments
 // (arr, arr) -> bool
-function diff (args, prev) {
-  // different set of arguments issues a rerender
-  if (args.length !== prev.length) { return true }
+function update () {
+  var result = false
+  var args = Array.prototype.slice.call(arguments)
+  var prev = this._arguments
 
-  // check for shallow diff in list of arguments
-  return args.reduce(function (diff, arg, index) {
-    if (arg.isSameNode) {
-      // handle argument being an element (or proxy)
-      return diff || !arg.isSameNode(prev[index])
-    } else {
-      // just compare
-      return diff || arg !== prev[index]
-    }
-  }, false)
+  // different lengths issues rerender
+  if (args.length !== this._arguments.length) return true
+
+  // make best effort to compare element as argument, fallback to shallow diff
+  for (var i = 0, len = args.length; i < len; i++) {
+    if (args[i].isSameNode) result = result || !args[i].isSameNode(prev[i])
+    else result = result || args[i] !== prev[i]
+  }
+
+  return result
 }
