@@ -86,6 +86,37 @@ test('server side render', function (t) {
     render('world')
   })
 
+  t.test('can add lifecycle event listeners', function (t) {
+    t.plan(3)
+    var render = component(function (ctx) {
+      ctx.foo()
+      return greeting()
+    })
+    render.on('foo', function (ctx, arg) {
+      t.pass('events are proxied as methods on ctx')
+      t.ok(ctx instanceof component.Context, 'ctx is first argument')
+      t.equal(typeof arg, 'undefined', 'arguments are not forwarded')
+    })
+    render('foo')
+  })
+
+  t.test('can fork', function (t) {
+    t.plan(3)
+    var first = component('first', function (ctx) {
+      ctx.foo()
+      return greeting()
+    })
+    first.on('foo', function (ctx) {
+      t.pass(`first event callback called for ${ctx._name}`)
+    })
+    var second = first.fork('second')
+    second.on('foo', function (ctx) {
+      t.pass(`second event callback called for ${ctx._name}`)
+    })
+    first()
+    second()
+  })
+
   t.test('original render function in context', function (t) {
     t.plan(1)
     var render = component(greeting)

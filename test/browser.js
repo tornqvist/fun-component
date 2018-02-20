@@ -151,6 +151,29 @@ test('browser', function (t) {
     }
   })
 
+  t.test('fork can override name', function (t) {
+    t.plan(2)
+    var first = component('first', greeting)
+    var second = first.fork('second')
+    first.on('beforerender', function (ctx) {
+      t.equal(ctx._name, 'first', 'name is unchanged on base')
+    })
+    second.on('beforerender', function (ctx) {
+      t.equal(ctx._name, 'second', 'name is changed on fork')
+    })
+    first()
+    second()
+  })
+
+  t.test('fork produce different nodes', function (t) {
+    t.plan(1)
+    var first = component(greeting)
+    var second = first.fork()
+    var container = createContainer(first())
+    container.appendChild(second())
+    t.equal(container.childElementCount, 2, 'two elements mounted')
+  })
+
   t.test('plugin: cache', function (t) {
     t.plan(6)
     var element
