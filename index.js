@@ -20,9 +20,15 @@ function component (name, render) {
   function renderer () {
     var ctx = context
     var args = Array.prototype.slice.call(arguments)
-    for (var i = 0, len = middleware.length; i < len; i++) {
-      ctx = middleware[i].apply(undefined, [ctx].concat(args)) || ctx
-      assert(typeof ctx.render === 'function', 'fun-component: plugin should return a component context')
+    var forward = [ctx]
+    forward.push.apply(forward, args)
+    for (var i = 0, len = middleware.length, next; i < len; i++) {
+      next = middleware[i].apply(undefined, forward)
+      if (next && next !== ctx) {
+        assert(typeof ctx.render === 'function', 'fun-component: plugin should return a component context')
+        ctx = next
+        forward.splice(0, 1, next)
+      }
     }
     return ctx.render.apply(ctx, args)
   }
@@ -86,7 +92,8 @@ function Context (name, render) {
   this._render = render
   this.createElement = function () {
     var args = Array.prototype.slice.call(arguments)
-    return render.apply(undefined, [ctx].concat(args))
+    args.unshift(ctx)
+    return render.apply(undefined, args)
   }
 }
 
@@ -111,13 +118,14 @@ Context.prototype.on = function (event, listener) {
       var args = Array.prototype.slice.call(arguments)
       var events = this._events[event]
 
-      // compose `update` arguments for diffing
       if (event === 'update') {
+        // compose `update` arguments for diffing
         args = [this, args, this._arguments]
       } else {
+        // ctx.element is not set at beforerender so we'll forward that
         if (event === 'beforerender') args.unshift(this)
         else args = [this]
-        args = args.concat(this._arguments)
+        args.push.apply(args, this._arguments)
       }
 
       // run through all events listeners in order, aggregating return value
