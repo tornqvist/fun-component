@@ -8,13 +8,13 @@
 
 </div>
 
-A functional approach to authoring performant HTML components using plugins. Syntactic suggar on top of [nanocomponent](https://github.com/choojs/nanocomponent). Pass in a function and get another function back that handles rerendering as needed when called upon.
+A functional approach to authoring performant HTML components using plugins. Pass in a function and get another function back that handles rerendering as needed when called upon. Syntactic suggar on top of [nanocomponent](https://github.com/choojs/nanocomponent).
 
 - [Usage](#usage)
 - [API](#api)
-  - [Context](#context)
-  - [Lifecycle](#lifecycle)
+  - [Lifecycle events](#lifecycle-events)
   - [Plugins](#plugins)
+  - [Composition and forking](#composition-and-forking)
 - [Examples](#examples)
 - [Why tho?](#why-tho)
 
@@ -24,8 +24,8 @@ The most straightforward use is to pass in a function and have the default shall
 
 ```javascript
 // button.js
-const html = require('bel')
-const component = require('fun-component')
+var html = require('bel')
+var component = require('fun-component')
 
 module.exports = component(function button (ctx, clicks, onclick) {
   return html`
@@ -38,11 +38,11 @@ module.exports = component(function button (ctx, clicks, onclick) {
 
 ```javascript
 // app.js
-const choo = require('choo')
-const html = require('choo/html')
-const button = require('./button')
+var choo = require('choo')
+var html = require('choo/html')
+var button = require('./button')
 
-const app = choo()
+var app = choo()
 app.route('/', view)
 app.mount('body')
 
@@ -56,9 +56,9 @@ function view (state, emit) {
 
 app.use(function (state, emitter) {
   state.clicks = 0
-  emitter.on('click', () => {
+  emitter.on('click', function () {
     state.clicks += 1
-    emitter.emit(state.events.RENDER)
+    emitter.emit('render')
   })
 })
 ```
@@ -81,8 +81,7 @@ document.body.appendChild(button(clicks, onclick))
 
 ## API
 
-### `component(render<function>)`
-### `component(name<string>, render<function>)`
+### `component([name], render)`
 
 Create a new component context. Either takes a function as an only argument or a name and a function. Returns a function that renders the element. If no name is supplied the name is derrived from the functions `name` property.
 
@@ -92,81 +91,67 @@ Create a new component context. Either takes a function as an only argument or a
 component('hello', () => html`<h1>Hi there!</h1>`)
 ```
 
-### Context
+### Lifecycle events
 
-The component context (`ctx`) is prefixed to the arguments of all lifecycle hooks and the render function itself. The context object can be used to access the underlying nanocomponent instance.
+All the lifecycle hooks of nanocomponent are supported, i.e. [`beforerender`](https://github.com/choojs/nanocomponent#nanocomponentprototypebeforerenderel), [`load`](https://github.com/choojs/nanocomponent#nanocomponentprototypeloadel), [`unload`](https://github.com/choojs/nanocomponent#nanocomponentprototypeunloadel), [`afterupdate`](https://github.com/choojs/nanocomponent#nanocomponentprototypeafterupdateel), and [`afterreorder`](https://github.com/choojs/nanocomponent#nanocomponentprototypeafterreorderel). You can listen for lifecycle events using the `on` method, and remove them with the `off` method. Any number of listeners can be added for an event.
 
 ```javascript
-// Exposing nanocomponent inner workings
-component(function echo(ctx) {
+var html = require('bel')
+var component = require('fun-component')
+
+var greeting = component(function greeting (ctx, name) {
+  console.log(`render with "${name}"`)
+  return html`<h1>Hello ${name}!</h1>`
+})
+
+greeting.on('afterupdate', beforerender)
+
+function afterupdate (ctx, name) {
+  console.log(`updated with "${name}"`)
+  greeting.off(afterupdate)
+}
+
+greeting('world') // -> logs: render with "world"
+greeting('planet') // -> logs: updated with "planet"
+greeting('tellus')
+```
+
+#### Context
+
+The component context (`ctx`) is prefixed to the arguments of all lifecycle events and the render function itself. The context object can be used to access the underlying nanocomponent instance.
+
+```javascript
+var html = require('bel')
+var component = require('fun-component')
+
+// exposing nanocomponent inner workings
+module.exports = component(function echo (ctx) {
   return html`<h1>I'm ${ctx._name} on the ${ctx._hasWindow ? 'client' : 'server'}</h1>`
 })
 ```
 
-### Lifecycle
-
-All the lifecycle hooks of nanocomponent are supported, i.e. [`beforerender`](https://github.com/choojs/nanocomponent#nanocomponentprototypebeforerenderel), [`load`](https://github.com/choojs/nanocomponent#nanocomponentprototypeloadel), [`unload`](https://github.com/choojs/nanocomponent#nanocomponentprototypeunloadel), [`afterupdate`](https://github.com/choojs/nanocomponent#nanocomponentprototypeafterupdateel), and [`afterreorder`](https://github.com/choojs/nanocomponent#nanocomponentprototypeafterreorderel). Lifecycle hooks are declared on the element itself (with an "on" prefix) and are forwarded to the underlying nanocomponent instance.
-
-All lifecycle hooks are called with the context object and the latest arguments used to call the component.
-
 #### Update
 
-fun-component comes with a baked in default update function that performs a shallow diff of arguments to determine whether to update the component. Setting `onupdate` on the element overrides this default behavior.
+fun-component comes with a baked in default update function that performs a shallow diff of arguments to determine whether to update the component. By listening for the `update` event you may override this default behavior.
 
-##### `onupdate(ctx<object>, args<array>, prev<array>)`
+If you attach several `update` listerners the component will update if one of them return `true`.
 
-Opposed to how nanocomponent calls the update function to detemrine whether to rerender the component, fun-component not only supplies the next arguments but also the previous arguments. These two can then be compared to determine whether to update.
+***Note**: Opposed to how nanocomponent calls the update function to determine whether to rerender the component, fun-component not only supplies the next arguments but also the previous arguments. These two can then be compared to determine whether to update.*
 
-*Tip: Using ES2015 deconstruction makes this a breeze.*
-
-```javascript
-component(function greeting(ctx, title) {
-  return html`<h1 onupdate=${update}>Hello ${title}!</h1>`
-})
-
-// Deconstruct arguments and compare `title`
-function update(ctx, [next], [prev]) {
-  return next !== prev
-}
-```
-
-#### Example
-
-Using every lifecycle hook available. The rendered element can be accessed on the context object as `ctx.element`.
+***Tip**: Using ES2015 array deconstructuring makes this a breeze.*
 
 ```javascript
-component(function hooks(ctx, title) {
-  return html`
-    <div onupdate=${update} onbeforerender=${beforerender} onload=${load} onunload=${unload} onafterupdate=${afterupdate} onafterreorder=${afterreorder}>
-      Hello ${title}!
-    </div>
-  `
+var html = require('bel')
+var component = require('fun-component')
+
+var greeting = component(function greeting (ctx, name) {
+  return html`<h1>Hello ${name}!</h1>`
 })
 
-function update(ctx, [title], [prev]) {
-  console.log(`diffing ${title} and ${prev}`)
-  return title !== prev
-}
-
-function beforerender(ctx, title) {
-  console.log(`will render with ${title}`)
-}
-
-function load(ctx, title) {
-  console.log(ctx.element, `mounted in DOM with ${title}`)
-}
-
-function unload(ctx, title) {
-  console.log(ctx.element, `removed from DOM with ${title}`)
-}
-
-function afterupdate(ctx, title) {
-  console.log(`updated with ${title}`)
-}
-
-function afterreorder(ctx, title) {
-  console.log(`reordered with ${title}`)
-}
+// deconstruct arguments and compare `name`
+greeting.on('update', function (ctx, [name], [prev]) {
+  return name !== prev
+})
 ```
 
 ### Plugins
@@ -210,11 +195,91 @@ For example implementations, see [/examples](/examples). Either spin them up loc
   - `npm run example:expandable`
   - https://fun-component-expandable.now.sh
 
+### Composition and forking
+
+Using lifecycle event listeners and plugins makes it very easy to lazily compose functions by attaching and removing event listeners as needed. But you may sometimes  wish to scope some listeners or plugins to a specific use case. To create a new component instance, inheriting all plugins and listeners, you may `fork` a component.
+
+```javascript
+// button.js
+var html = require('bel')
+var component = require('fun-component')
+
+var button = component(function button (ctx, text, type, onclick) {
+  return html`<button type="${type}" onclick=${onclick}>${text}</button>`
+})
+
+// only bother with updating the text
+button.on('update', function (ctx, [text], [prev]) {
+  return text !== prev
+})
+
+module.exports = button
+```
+
+```javascript
+// form.js
+var html = require('bel')
+var component = require('fun-component')
+var spawn = require('fun-component/spawn')
+var restate = require('fun-component/restate')
+var button = require('./button')
+
+// fork button so that we can add custom plugins
+var formButton = button.fork()
+
+// spawn buttons based on their type
+formButton.use(spawn((text, type) => type))
+
+var form = component(function (ctx, error, submit) {
+  return html`
+    <form onsubmit=${onsubmit}>
+      ${error}
+      <input type="text" disabled=${ctx.state.busy} value="${ctx.state.text} oninput=${oninput}>
+      ${formButton('Clear', 'clear', onclear))}
+      ${formButton(ctx.state.busy ? 'Saving' : 'Save', 'submit')}
+    </form>
+  `
+
+  function oninput (event) {
+    ctx.restate({text: event.target.value})
+  }
+
+  function onclear () {
+    ctx.restate({text: ''})
+  }
+
+  function onsubmit (event) {
+    event.preventDefault()
+
+    // don't submit twice
+    if (ctx.state.busy) return
+
+    // update busy state and call submit callback
+    ctx.restate({busy: true})
+    submit(new FormData(event.target))
+  }
+})
+
+// only update if an error occured while submitting
+form.on('update', function (ctx, error, submit) {
+  if (ctx.state.busy && error) {
+    ctx.state.busy = false
+    return true
+  }
+  return false
+})
+
+// use a local state for storing text and interactive state
+form.use(restate({text: '', busy: false}))
+
+module.exports = form
+```
+
 ## Why tho?
 
-Authoring a component should be as easy as writing a function. Using arguments and scope to handle state is both implicit and transparent. Worrying about calling context, and stashing things on `this` makes for cognitive overhead.
+Authoring a component should be as easy as writing a function. Using arguments and scope to handle a components lifecycle is obvious and straight forward. Whereas having to worry about calling context and stashing things on `this` makes for cognitive overhead.
 
-Not for you? If object oriented programming is your thing, use [nanocomponent](https://github.com/choojs/nanocomponent). If you're more into events, maybe [microcomponent](https://github.com/yoshuawuyts/microcomponent) is a good fit.
+Not for you? If you need more fine grained control or perfer a straight up object oriented programming approach, try using [nanocomponent](https://github.com/choojs/nanocomponent), it's what's powering fun-component behind the scenes.
 
 ## See Also
 
