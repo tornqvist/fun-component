@@ -104,7 +104,7 @@ var greeting = component(function greeting (ctx, name) {
   return html`<h1>Hello ${name}!</h1>`
 })
 
-greeting.on('afterupdate', beforerender)
+greeting.on('afterupdate', afterupdate)
 
 function afterupdate (ctx, name) {
   console.log(`updated with "${name}"`)
@@ -118,7 +118,7 @@ greeting('tellus')
 
 #### Context
 
-The component context (`ctx`) is prefixed to the arguments of all lifecycle events and the render function itself. The context object can be used to access the underlying nanocomponent instance.
+The component context (`ctx`) is prefixed to the arguments of all lifecycle events and the render function itself. The context object can be used to access the underlying [nanocomponent](https://github.com/choojs/nanocomponent) instance.
 
 ```javascript
 var html = require('bel')
@@ -134,7 +134,7 @@ module.exports = component(function echo (ctx) {
 
 fun-component comes with a baked in default update function that performs a shallow diff of arguments to determine whether to update the component. By listening for the `update` event you may override this default behavior.
 
-If you attach several `update` listerners the component will update if one of them return `true`.
+If you attach several `update` listerners the component will update if *any one* of them return `true`.
 
 ***Note**: Opposed to how nanocomponent calls the update function to determine whether to rerender the component, fun-component not only supplies the next arguments but also the previous arguments. These two can then be compared to determine whether to update.*
 
@@ -234,8 +234,8 @@ var form = component(function (ctx, error, submit) {
   return html`
     <form onsubmit=${onsubmit}>
       ${error}
-      <input type="text" disabled=${ctx.state.busy} value="${ctx.state.text} oninput=${oninput}>
-      ${formButton('Clear', 'clear', onclear))}
+      <input type="text" disabled=${ctx.state.busy} value="${ctx.state.text}" oninput=${oninput}>
+      ${formButton('Clear', 'reset', onclear)}
       ${formButton(ctx.state.busy ? 'Saving' : 'Save', 'submit')}
     </form>
   `
