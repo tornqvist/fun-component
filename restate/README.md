@@ -30,11 +30,11 @@ document.body.appendChild(render('Hi there!'))
 
 ## API
 
-### `restate(initialState<object>)`
+### `restate(initialState)`
 
 Create a middleware that adds a `state` object and the `restate` method to context.
 
-### `ctx.restate(next<object>)`
+### `ctx.restate(next)`
 
 Takes a new state as only argument. It updates the state and issues a rerender with the latest arguments.
 
