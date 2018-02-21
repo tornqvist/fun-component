@@ -257,33 +257,115 @@ test('browser', function (t) {
   })
 
   t.test('plugin: spawn', function (t) {
-    t.plan(4)
-    var cache = {}
-    var render = component(greeting)
-
-    t.throws(spawn, 'identity fn is required')
-    render.use(spawn(function (id) { return id }))
-    render.on('load', function (ctx, id) {
-      if (cache[id]) t.notEqual(ctx._ncID, cache[id], `spawn ${id} was discarded`)
-      cache[id] = ctx._ncID
+    t.test('identify fn is required', function (t) {
+      t.throws(spawn, 'throws w/o arguments')
+      t.end()
     })
 
-    var one = render('one')
-    var two = render('two')
-    var container = createContainer()
+    t.test('identify must return a string', function (t) {
+      var render = component(greeting)
+      render.use(spawn(function () {
+        return 1
+      }))
+      t.throws(render, 'throws when id is not string')
+      t.end()
+    })
 
-    container.appendChild(one)
-    container.appendChild(two)
-    window.requestAnimationFrame(function () {
-      t.notEqual(cache.one, cache.two, 'two contexts spawned')
-      container.removeChild(one)
-      container.removeChild(two)
+    t.test('create and discard instances', function (t) {
+      t.plan(3)
+      var cache = {}
+      var render = component(greeting)
 
+      render.use(spawn(identity))
+      render.on('load', function (ctx, id) {
+        if (cache[id]) t.notEqual(ctx._ncID, cache[id], `spawn ${id} was discarded`)
+        cache[id] = ctx._ncID
+      })
+
+      var one = render('one')
+      var two = render('two')
+      var container = createContainer()
+
+      container.appendChild(one)
+      container.appendChild(two)
       window.requestAnimationFrame(function () {
-        container.appendChild(render('one'))
-        container.appendChild(render('two'))
+        t.notEqual(cache.one, cache.two, 'two contexts spawned')
+        container.removeChild(one)
+        container.removeChild(two)
+
+        window.requestAnimationFrame(function () {
+          container.appendChild(render('one'))
+          container.appendChild(render('two'))
+        })
       })
     })
+
+    t.test('use plain hash cache as option', function (t) {
+      t.plan(2)
+      var cache = {}
+      var render = component(greeting)
+      render.use(spawn(identity, {cache: cache}))
+      render.on('load', function (ctx, id) {
+        t.ok(cache.hasOwnProperty(id), 'ctx in cache')
+      })
+      render.on('unload', function (ctx, id) {
+        t.notOk(cache.hasOwnProperty(id), 'ctx removed from cache')
+      })
+      var element = render('foo')
+      var container = createContainer(element)
+      window.requestAnimationFrame(function () {
+        container.removeChild(element)
+      })
+    })
+
+    t.test('use lru cache as option', function (t) {
+      t.plan(7)
+      var cache = {}
+      var lru = {
+        get: function (id) {
+          t.equal(this, lru, '#get calling context is lru')
+          t.equal(id, 'foo', '#get param is id')
+          return cache[id]
+        },
+        set: function (id, ctx) {
+          t.equal(this, lru, '#set calling context is lru')
+          t.equal(id, 'foo', '#set first param is id')
+          t.ok(ctx instanceof component.Context, '#set second param is ctx')
+          cache[id] = ctx
+        },
+        remove: function (id) {
+          t.equal(this, lru, '#remove calling context is lru')
+          t.equal(id, 'foo', '#remove param is id')
+          delete cache[id]
+        }
+      }
+      var render = component(greeting)
+      render.use(spawn(identity, {cache: lru}))
+      var element = render('foo')
+      var container = createContainer(element)
+      window.requestAnimationFrame(function () {
+        container.removeChild(element)
+      })
+    })
+
+    t.test('respect persist option', function (t) {
+      t.plan(1)
+      var cache = {}
+      var render = component(greeting)
+      render.use(spawn(identity, {persist: true, cache: cache}))
+      render.on('unload', function (ctx, id) {
+        t.ok(cache.hasOwnProperty(id), 'ctx in cache after unload')
+      })
+      var element = render('persisted')
+      var container = createContainer(element)
+      window.requestAnimationFrame(function () {
+        container.removeChild(element)
+      })
+    })
+
+    function identity (id) {
+      return id
+    }
   })
 })
 

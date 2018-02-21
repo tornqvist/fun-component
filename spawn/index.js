@@ -1,12 +1,13 @@
 var assert = require('nanoassert')
 var Context = require('../').Context
 
-// spawn component contexts on demand and discard on unload
-// fn -> fn
-module.exports = function init (identity) {
+// spawn component contexts on demand and optionally discard on unload
+// (fn, obj?) -> fn
+module.exports = function init (identity, opts) {
   assert(typeof identity === 'function', 'fun-component: identity should be a function')
+  opts = opts || {}
 
-  var cache = {}
+  var cache = opts.cache || {}
 
   return function spawn (source) {
     var name = source._name
@@ -17,22 +18,27 @@ module.exports = function init (identity) {
 
     assert(typeof id === 'string', 'fun-component: identity should return a string')
 
-    var ctx = cache[id]
+    var ctx = typeof cache.get === 'function' ? cache.get(id) : cache[id]
 
     if (!ctx) {
       // spawn a new context
-      ctx = cache[id] = new Context([name, id].join('_'), render)
+      ctx = new Context([name, id].join('_'), render)
+      if (typeof cache.set === 'function') cache.set(id, ctx)
+      else cache[id] = ctx
+
+      if (!opts.persist) {
+        // remove context from cache on unload
+        ctx.on('unload', function () {
+          if (typeof cache.remove === 'function') cache.remove(id)
+          else delete cache[id]
+        })
+      }
 
       // copy over all lifecycle event listeners to the new context
       var keys = Object.keys(source._events)
       for (var i = 0, len = keys.length; i < len; i++) {
         addEventListeners(ctx, keys[i], events[keys[i]])
       }
-
-      // remove context from cache on unload
-      ctx.on('unload', function () {
-        delete cache[id]
-      })
     }
 
     return ctx
