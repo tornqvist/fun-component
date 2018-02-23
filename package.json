@@ -33,7 +33,7 @@
     "@tap-format/spec": "^0.2.0",
     "bel": "^5.1.5",
     "browserify": "^15.2.0",
-    "standard": "^10.0.3",
+    "standard": "^11.0.0",
     "tape": "^4.8.0",
     "tape-run": "^3.0.0"
   },
