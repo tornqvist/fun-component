@@ -1,6 +1,6 @@
 # fun-component/spawn
 
-Spawn component contexts on demand, optionally discarding them on unload.
+Create new component contexts on demand, optionally discarding them on unload.
 
 ## Usage
 
@@ -36,7 +36,7 @@ function list (items) {
 
 ### `spawn(identity[, opts])`
 
-Create a middleware function that spawns a new context identified by key. Takes a function as first argument, and an options object as second.
+Returns a middleware function that creates a new context, identified by key. Takes a function and an (optional) options object.
 
 The function passed to spawn should return a unique key (`string`) that is used to identify which context to use for rendering. The identity function will be called whenever the component needs to render or update. The arguments used to call the component are forwarded to the identity function for you to use to determine the key.
 
@@ -55,7 +55,7 @@ var html = require('bel')
 var LRU = require('nanolru')
 var component = require('fun-component')
 
-var cache = new LRU(3) // only ever allow a maximum of three instances
+var cache = new LRU(3) // only ever allow a maximum of three instances of button
 var button = component(function button (id, text, onclick) {
   return html`<button name="${id}" onclick=${onclick}>${text}</button>`
 })

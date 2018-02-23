@@ -1,6 +1,6 @@
 <div align="center">
 
-# fun-component `<☺/>`
+# fun-component `<🙂/>`
 
 [![npm version](https://img.shields.io/npm/v/fun-component.svg?style=flat-square)](https://npmjs.org/package/fun-component) [![build status](https://img.shields.io/travis/tornqvist/fun-component/master.svg?style=flat-square)](https://travis-ci.org/tornqvist/fun-component)
 [![downloads](http://img.shields.io/npm/dm/fun-component.svg?style=flat-square)](https://npmjs.org/package/fun-component)
@@ -8,7 +8,7 @@
 
 </div>
 
-A functional approach to authoring performant HTML components using plugins. Pass in a function and get another function back that handles rerendering as needed when called upon. Syntactic suggar on top of [nanocomponent](https://github.com/choojs/nanocomponent).
+Performant and functional HTML components with plugins. Syntactic suggar on top of [nanocomponent](https://github.com/choojs/nanocomponent).
 
 - [Usage](#usage)
 - [API](#api)
@@ -20,20 +20,27 @@ A functional approach to authoring performant HTML components using plugins. Pas
 
 ## Usage
 
-The most straightforward use is to pass in a function and have the default shallow diff figure out whether to rerender the component on consecutive calls.
+Pass in a function and get another one back that handles rerendering.
 
 ```javascript
 // button.js
 var html = require('bel')
 var component = require('fun-component')
 
-module.exports = component(function button (ctx, clicks, onclick) {
+var button = component(function button (ctx, clicks, onclick) {
   return html`
     <button onclick=${onclick}>
       Clicked ${clicks} times
     </button>
   `
 })
+
+// only bother updating if text changed
+button.on('update', function (ctx, [text], [prev]) {
+  return text !== prev
+})
+
+module.exports = button
 ```
 
 ```javascript
@@ -49,7 +56,7 @@ app.mount('body')
 function view (state, emit) {
   return html`
     <body>
-      ${button(state.clicks, emit)}
+      ${button(state.clicks, () => emit('emit'))}
     </body>
   `
 }
@@ -65,7 +72,7 @@ app.use(function (state, emitter) {
 
 ### Standalone
 
-Though fun-component was authored with [choo](https://github.com/choojs/choo) in mind it works just as well standalone!
+Though fun-component was authored with [choo](https://github.com/choojs/choo) in mind it works just as well standalone.
 
 ```javascript
 var button = require('./button')
@@ -88,61 +95,65 @@ Create a new component context. Either takes a function as an only argument or a
 *Warning: implicit function names are most probably mangled during minification. If name consistency is important to your implementation, use the explicit name syntax.*
 
 ```javascript
-var render = component('hello', () => html`<h1>Hi there!</h1>`)
+var button = component('button', (text) => html`<button>${text}</button>`)
 ```
 
-#### `render.on(name, fn)`
+#### `button.on(name, fn)`
 
 Add lifecycle event listener, see [Lifecycle events](#lifecycle-events).
 
-#### `render.off(name, fn)`
+#### `button.off(name, fn)`
 
 Remove lifecycle eventlistener, see [Lifecycle events](#lifecycle-events).
 
-#### `render.use(fn)`
+#### `button.use(fn)`
 
 Add plugin, see [Plugins](#plugins).
 
-#### `render.fork()`
+#### `button.fork()`
 
 Create a new component context inheriting listeners and plugins, see [Composition and forking](#composition-and-forking)
 
 ### Lifecycle events
 
-All the lifecycle hooks of nanocomponent are supported, i.e. [`beforerender`](https://github.com/choojs/nanocomponent#nanocomponentprototypebeforerenderel), [`load`](https://github.com/choojs/nanocomponent#nanocomponentprototypeloadel), [`unload`](https://github.com/choojs/nanocomponent#nanocomponentprototypeunloadel), [`afterupdate`](https://github.com/choojs/nanocomponent#nanocomponentprototypeafterupdateel), and [`afterreorder`](https://github.com/choojs/nanocomponent#nanocomponentprototypeafterreorderel). You can listen for lifecycle events using the `on` method, and remove them with the `off` method. Any number of listeners can be added for an event. The arguments to lifecycle event listeners always prefixed with the component context and the element, followed by the last render arguments.
+All the lifecycle hooks of nanocomponent are supported, i.e. [`beforerender`](https://github.com/choojs/nanocomponent#nanocomponentprototypebeforerenderel), [`load`](https://github.com/choojs/nanocomponent#nanocomponentprototypeloadel), [`unload`](https://github.com/choojs/nanocomponent#nanocomponentprototypeunloadel), [`afterupdate`](https://github.com/choojs/nanocomponent#nanocomponentprototypeafterupdateel), and [`afterreorder`](https://github.com/choojs/nanocomponent#nanocomponentprototypeafterreorderel). Any number of listeners can be added for an event. The arguments are always prefixed with the component context and the element, followed by the render arguments.
 
 ```javascript
 var html = require('bel')
 var component = require('fun-component')
 
 var greeting = component(function greeting (ctx, name) {
-  console.log(`render with "${name}"`)
   return html`<h1>Hello ${name}!</h1>`
 })
 
-greeting.on('afterupdate', afterupdate)
-
-function afterupdate (ctx, el, name) {
-  console.log(`updated with "${name}"`)
-  greeting.off(afterupdate)
+greeting.on('load', function (ctx, el, name) {
+  console.log(`element ${name} is now in the DOM`)
 }
 
-greeting('world') // -> logs: render with "world"
-greeting('planet') // -> logs: updated with "planet"
-greeting('tellus')
+greeting.on('afterupdate', function (ctx, el, name) {
+  console.log(`element ${name} was updated`)
+}
+
+document.body.appendChild(greeting('world'))
+greeting('planet')
 ```
 
 #### Context
 
-The component context (`ctx`) is prefixed to the arguments of all lifecycle events and the render function itself. The context object can be used to access the underlying [nanocomponent](https://github.com/choojs/nanocomponent) instance.
+The component context (`ctx`) is prefixed to the arguments of all lifecycle events and the render function itself. The context object can be used to access the underlying [nanocomponent](https://github.com/choojs/nanocomponent).
 
 ```javascript
 var html = require('bel')
 var component = require('fun-component')
 
 // exposing nanocomponent inner workings
-module.exports = component(function echo (ctx) {
-  return html`<h1>I'm ${ctx._name} on the ${ctx._hasWindow ? 'client' : 'server'}</h1>`
+module.exports = component(function time (ctx) {
+  return html`
+    <div>
+      The time is ${new Date()}
+      <button onclick=${() => ctx.rerender())}>What time is it?</button>
+    </div>
+  `
 })
 ```
 
@@ -178,7 +189,7 @@ Plugins are middleware functions that are called just before the component is re
 const html = require('bel')
 const component = require('fun-component')
 
-const greeter = component(function greeting(ctx, title) {
+const greeter = component(function greeting (ctx, title) {
   return html`<h1>Hello ${title}!</h1>`
 })
 
@@ -190,7 +201,7 @@ greeter.use(function log(ctx, title) {
 document.body.appendChild(greeter('world'))
 ```
 
-fun-component is bundled with with a handfull of plugins that cover the most common scenarios. Have you written a plugin you want featured in this list? Fork, add, and make a pull request!
+fun-component is bundled with with a handfull of plugins that cover the most common scenarios. Have you written a plugin you want featured in this list? Fork, add, and make a pull request.
 
 - [spawn](spawn) – Spawn component contexts on demand and discard on unload.
 - [restate](restate) – Add state object and state management to the context object.

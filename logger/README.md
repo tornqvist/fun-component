@@ -1,6 +1,6 @@
 # fun-component/logger
 
-Add a logger (using [nanologger](https://github.com/choojs/nanologger)) to the context object and log all lifecycle events.
+Log all lifecycle events. Using [nanologger](https://github.com/choojs/nanologger).
 
 ## Usage
 
@@ -10,7 +10,7 @@ Access the nanologger instance under `ctx.log`.
 const html = require('bel')
 const component = require('fun-component')
 
-component(function hello (ctx, title) {
+var hello = component(function hello (ctx, title) {
   return html`
     <div>
       Hello ${title}!
@@ -20,7 +20,7 @@ component(function hello (ctx, title) {
 
 // enable logging during development
 if (process.env.NODE_ENV === 'development') {
-  component.use(require('fun-component/logger')())
+  hello.use(require('fun-component/logger')())
 }
 ```
 
