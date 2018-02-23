@@ -1,6 +1,6 @@
 <div align="center">
 
-# fun-component
+# fun-component `<☺/>`
 
 [![npm version](https://img.shields.io/npm/v/fun-component.svg?style=flat-square)](https://npmjs.org/package/fun-component) [![build status](https://img.shields.io/travis/tornqvist/fun-component/master.svg?style=flat-square)](https://travis-ci.org/tornqvist/fun-component)
 [![downloads](http://img.shields.io/npm/dm/fun-component.svg?style=flat-square)](https://npmjs.org/package/fun-component)
@@ -88,12 +88,28 @@ Create a new component context. Either takes a function as an only argument or a
 *Warning: implicit function names are most probably mangled during minification. If name consistency is important to your implementation, use the explicit name syntax.*
 
 ```javascript
-component('hello', () => html`<h1>Hi there!</h1>`)
+var render = component('hello', () => html`<h1>Hi there!</h1>`)
 ```
+
+#### `render.on(name, fn)`
+
+Add lifecycle event listener, see [Lifecycle events](#lifecycle-events).
+
+#### `render.off(name, fn)`
+
+Remove lifecycle eventlistener, see [Lifecycle events](#lifecycle-events).
+
+#### `render.use(fn)`
+
+Add plugin, see [Plugins](#plugins).
+
+#### `render.fork()`
+
+Create a new component context inheriting listeners and plugins, see [Composition and forking](#composition-and-forking)
 
 ### Lifecycle events
 
-All the lifecycle hooks of nanocomponent are supported, i.e. [`beforerender`](https://github.com/choojs/nanocomponent#nanocomponentprototypebeforerenderel), [`load`](https://github.com/choojs/nanocomponent#nanocomponentprototypeloadel), [`unload`](https://github.com/choojs/nanocomponent#nanocomponentprototypeunloadel), [`afterupdate`](https://github.com/choojs/nanocomponent#nanocomponentprototypeafterupdateel), and [`afterreorder`](https://github.com/choojs/nanocomponent#nanocomponentprototypeafterreorderel). You can listen for lifecycle events using the `on` method, and remove them with the `off` method. Any number of listeners can be added for an event.
+All the lifecycle hooks of nanocomponent are supported, i.e. [`beforerender`](https://github.com/choojs/nanocomponent#nanocomponentprototypebeforerenderel), [`load`](https://github.com/choojs/nanocomponent#nanocomponentprototypeloadel), [`unload`](https://github.com/choojs/nanocomponent#nanocomponentprototypeunloadel), [`afterupdate`](https://github.com/choojs/nanocomponent#nanocomponentprototypeafterupdateel), and [`afterreorder`](https://github.com/choojs/nanocomponent#nanocomponentprototypeafterreorderel). You can listen for lifecycle events using the `on` method, and remove them with the `off` method. Any number of listeners can be added for an event. The arguments to lifecycle event listeners always prefixed with the component context and the element, followed by the last render arguments.
 
 ```javascript
 var html = require('bel')
@@ -106,7 +122,7 @@ var greeting = component(function greeting (ctx, name) {
 
 greeting.on('afterupdate', afterupdate)
 
-function afterupdate (ctx, name) {
+function afterupdate (ctx, el, name) {
   console.log(`updated with "${name}"`)
   greeting.off(afterupdate)
 }

@@ -24,7 +24,7 @@ test('browser', function (t) {
     t.plan(2)
 
     var render = component(greeting)
-    render.on('afterupdate', function (ctx, name, callback) {
+    render.on('afterupdate', function (ctx, el, name, callback) {
       callback()
     })
 
@@ -62,15 +62,17 @@ test('browser', function (t) {
     var node = render('world')
     var container = createContainer(node)
 
-    function load (ctx, str) {
+    function load (ctx, el, str) {
       state.load += 1
       t.ok(ctx instanceof component.Context, 'load: context is first argument')
+      t.equal(el.id, ctx._ncID, 'load: element is forwarded')
       t.equal(str, 'world', 'load: arguments are forwarded')
       render('Jane')
     }
-    function unload (ctx, str) {
+    function unload (ctx, el, str) {
       state.unload += 1
       t.ok(ctx instanceof component.Context, 'unload: context is first argument')
+      t.equal(el.id, ctx._ncID, 'unload: element is forwarded')
       t.equal(str, 'Jane', 'unload: arguments are forwarded')
       t.deepEqual(state, {
         load: 1,
@@ -88,15 +90,16 @@ test('browser', function (t) {
       t.equal(prev[0], 'world', 'update: prev arguments are forwarded')
       return true
     }
-    function beforerender (ctx, element, str) {
+    function beforerender (ctx, el, str) {
       state.beforerender += 1
       t.ok(ctx instanceof component.Context, 'beforerender: context is first argument')
-      t.ok(element instanceof window.HTMLElement, 'beforerender: element is forwarded')
+      t.equal(el.id, ctx._ncID, 'beforerender: element is forwarded')
       t.equal(str, 'world', 'beforerender: arguments are forwarded')
     }
-    function afterupdate (ctx, str) {
+    function afterupdate (ctx, el, str) {
       state.afterupdate += 1
       t.ok(ctx instanceof component.Context, 'afterupdate: context is first argument')
+      t.equal(el.id, ctx._ncID, 'afterupdate: element is forwarded')
       t.equal(str, 'Jane', 'afterupdate: arguments are forwarded')
       window.requestAnimationFrame(function () {
         container.removeChild(node)
@@ -111,7 +114,7 @@ test('browser', function (t) {
     render.on('load', onload)
     render.on('load', onload)
     createContainer(render('world'))
-    function onload (ctx, str) {
+    function onload (ctx, el, str) {
       times += 1
       t.pass('load event #' + times)
     }
@@ -277,7 +280,7 @@ test('browser', function (t) {
       var render = component(greeting)
 
       render.use(spawn(identity))
-      render.on('load', function (ctx, id) {
+      render.on('load', function (ctx, el, id) {
         if (cache[id]) t.notEqual(ctx._ncID, cache[id], `spawn ${id} was discarded`)
         cache[id] = ctx._ncID
       })
@@ -305,10 +308,10 @@ test('browser', function (t) {
       var cache = {}
       var render = component(greeting)
       render.use(spawn(identity, {cache: cache}))
-      render.on('load', function (ctx, id) {
+      render.on('load', function (ctx, el, id) {
         t.ok(cache.hasOwnProperty(id), 'ctx in cache')
       })
-      render.on('unload', function (ctx, id) {
+      render.on('unload', function (ctx, el, id) {
         t.notOk(cache.hasOwnProperty(id), 'ctx removed from cache')
       })
       var element = render('foo')
@@ -353,7 +356,7 @@ test('browser', function (t) {
       var cache = {}
       var render = component(greeting)
       render.use(spawn(identity, {persist: true, cache: cache}))
-      render.on('unload', function (ctx, id) {
+      render.on('unload', function (ctx, el, id) {
         t.ok(cache.hasOwnProperty(id), 'ctx in cache after unload')
       })
       var element = render('persisted')

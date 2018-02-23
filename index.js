@@ -122,9 +122,7 @@ Context.prototype.on = function (event, listener) {
         // compose `update` arguments for diffing
         args = [this, args, this._arguments]
       } else {
-        // ctx.element is not set at beforerender so we'll forward that
-        if (event === 'beforerender') args.unshift(this)
-        else args = [this]
+        args.unshift(this)
         args.push.apply(args, this._arguments)
       }
 
