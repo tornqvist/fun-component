@@ -49,7 +49,7 @@ app.mount('body')
 function view (state, emit) {
   return html`
     <body>
-      ${button(state.clicks, () => emit('click'))}
+      ${button(state.clicks, emit)}
     </body>
   `
 }
@@ -68,9 +68,9 @@ app.use(function (state, emitter) {
 Though fun-component was authored with [choo](https://github.com/choojs/choo) in mind it works just as well standalone!
 
 ```javascript
-const button = require('./button')
+var button = require('./button')
 
-let clicks = 0
+var clicks = 0
 function onclick () {
   clicks += 1
   button(clicks, onclick)
@@ -220,8 +220,8 @@ Using lifecycle event listeners and plugins makes it very easy to lazily compose
 var html = require('bel')
 var component = require('fun-component')
 
-var button = component(function button (ctx, text, type, onclick) {
-  return html`<button type="${type}" onclick=${onclick}>${text}</button>`
+var button = component(function button (ctx, text, onclick) {
+  return html`<button onclick=${onclick}>${text}</button>`
 })
 
 // only bother with updating the text
@@ -233,62 +233,41 @@ module.exports = button
 ```
 
 ```javascript
-// form.js
+// infinite-tweets.js
 var html = require('bel')
 var component = require('fun-component')
-var spawn = require('fun-component/spawn')
-var restate = require('fun-component/restate')
+var onIntersect = require('on-intersect')
 var button = require('./button')
 
-// fork button so that we can add custom plugins
-var formButton = button.fork()
+module.exports = list
 
-// spawn buttons based on their type
-formButton.use(spawn((text, type) => type))
+// fork button so that we can add custom behavior
+var paginator = button.fork()
 
-var form = component(function (ctx, error, submit) {
+// automatically click button when in view
+paginator.on('load', function (ctx, el, text, onclick) {
+  var disconnect = onIntersect(el, onclick)
+  paginator.on('unload', disconnect)
+})
+
+function list (tweets, paginate) {
   return html`
-    <form onsubmit=${onsubmit}>
-      ${error}
-      <input type="text" disabled=${ctx.state.busy} value="${ctx.state.text}" oninput=${oninput}>
-      ${formButton('Clear', 'reset', onclear)}
-      ${formButton(ctx.state.busy ? 'Saving' : 'Save', 'submit')}
-    </form>
+    <div>
+      <ul>
+        ${tweets.map(tweet => html`
+          <article>
+            <time>${tweet.created_at}</time><br>
+            <a href="https://twitter.com/${tweet.user.screen_name}">
+              @${tweet.user.screen_name}
+            </a>
+            <p>${tweet.text}</p>
+          </article>
+        `)}
+      </ul>
+      ${paginator('Show more', paginate)}
+    </div>
   `
-
-  function oninput (event) {
-    ctx.restate({text: event.target.value})
-  }
-
-  function onclear () {
-    ctx.restate({text: ''})
-  }
-
-  function onsubmit (event) {
-    event.preventDefault()
-
-    // don't submit twice
-    if (ctx.state.busy) return
-
-    // update busy state and call submit callback
-    ctx.restate({busy: true})
-    submit(new FormData(event.target))
-  }
-})
-
-// only update if an error occured while submitting
-form.on('update', function (ctx, error, submit) {
-  if (ctx.state.busy && error) {
-    ctx.state.busy = false
-    return true
-  }
-  return false
-})
-
-// use a local state for storing text and interactive state
-form.use(restate({text: '', busy: false}))
-
-module.exports = form
+}
 ```
 
 ## Why tho?

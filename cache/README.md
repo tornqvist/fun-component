@@ -60,9 +60,7 @@ const render = component(function uncached (ctx) {
 render.use(cache())
 
 render.on('unload', function (ctx) {
-  if (someCondition) {
-    // unset cache to create a new element on next render
-    delete ctx.cached
-  }
+  // unset cache to create a new element on next render
+  if (someCondition) delete ctx.cached
 })
 ```

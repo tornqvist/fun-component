@@ -26,6 +26,6 @@ if (process.env.NODE_ENV === 'development') {
 
 ## API
 
-### `logger(opts)`
+### `logger([opts])`
 
 Create a middleware that adds an instance of nanologger to the `ctx.log` property. The opts are forwarded to [nanologger](https://github.com/choojs/nanologger).

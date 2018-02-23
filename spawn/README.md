@@ -34,7 +34,7 @@ function list (items) {
 
 ## API
 
-### `spawn(identity, opts)`
+### `spawn(identity[, opts])`
 
 Create a middleware function that spawns a new context identified by key. Takes a function as first argument, and an options object as second.
 
