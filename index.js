@@ -166,9 +166,10 @@ function update () {
   if (args.length !== this._arguments.length) return true
 
   // make best effort to compare element as argument, fallback to shallow diff
-  for (var i = 0, len = args.length; i < len; i++) {
-    if (args[i].isSameNode) result = result || !args[i].isSameNode(prev[i])
-    else result = result || args[i] !== prev[i]
+  for (var i = 0, len = args.length, arg; i < len; i++) {
+    arg = args[i]
+    if (arg && arg.isSameNode) result = result || !arg.isSameNode(prev[i])
+    else result = result || arg !== prev[i]
   }
 
   return result

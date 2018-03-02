@@ -21,8 +21,6 @@ test('browser', function (t) {
   })
 
   t.test('default update diff', function (t) {
-    t.plan(2)
-
     var render = component(greeting)
     render.on('afterupdate', function (ctx, el, name, callback) {
       callback()
@@ -37,10 +35,13 @@ test('browser', function (t) {
     render('world', fn)
     next = function () { t.pass('different argument update') }
     render('again', fn)
+    next = function () { t.pass('handles falsy argument') }
+    render(null, fn)
     next = function () {}
     var proxy = render('world', fn, element)
     next = function () { t.fail('proxy and element should be same') }
     render('world', fn, proxy)
+    t.end()
   })
 
   t.test('lifecycle events', function (t) {
