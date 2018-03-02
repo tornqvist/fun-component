@@ -27,7 +27,7 @@ Pass in a function and get another one back that handles rerendering.
 var html = require('bel')
 var component = require('fun-component')
 
-var button = component(function button (ctx, clicks, onclick) {
+var button = module.exports = component(function button (ctx, clicks, onclick) {
   return html`
     <button onclick=${onclick}>
       Clicked ${clicks} times
@@ -39,8 +39,6 @@ var button = component(function button (ctx, clicks, onclick) {
 button.on('update', function (ctx, [text], [prev]) {
   return text !== prev
 })
-
-module.exports = button
 ```
 
 ```javascript
@@ -231,7 +229,7 @@ Using lifecycle event listeners and plugins makes it very easy to lazily compose
 var html = require('bel')
 var component = require('fun-component')
 
-var button = component(function button (ctx, text, onclick) {
+var button = module.exports = component(function button (ctx, text, onclick) {
   return html`<button onclick=${onclick}>${text}</button>`
 })
 
@@ -239,8 +237,6 @@ var button = component(function button (ctx, text, onclick) {
 button.on('update', function (ctx, [text], [prev]) {
   return text !== prev
 })
-
-module.exports = button
 ```
 
 ```javascript
