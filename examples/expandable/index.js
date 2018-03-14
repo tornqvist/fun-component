@@ -1,5 +1,3 @@
-/* eslint-env es6 */
-
 const html = require('bel')
 const raw = require('bel/raw')
 const morph = require('nanomorph')
@@ -37,13 +35,13 @@ const expandable = component(function expandable (ctx, id, text) {
  * Use first argument as key for context
  */
 
-expandable.use(spawn(id => id))
+expandable.use(spawn((id) => id))
 
 /**
  * Default expandables to be collapsed
  */
 
-expandable.use(restate({ expanded: false }))
+expandable.use(restate({expanded: false}))
 
 /**
  * Create a base textarea component
@@ -59,7 +57,7 @@ const input = component(function input (ctx, id, text, oninput) {
  * Use first argument as key for context
  */
 
-input.use(spawn(id => id))
+input.use(spawn((id) => id))
 
 /**
  * Start application
@@ -103,7 +101,7 @@ function view (state) {
   }
 
   function oninput (id) {
-    return event => {
+    return function (event) {
       const value = event.target.value
       update({ [id]: value })
     }

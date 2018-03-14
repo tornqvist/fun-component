@@ -1,5 +1,4 @@
 /* globals mapboxgl */
-/* eslint-env es6 */
 
 const html = require('bel')
 const morph = require('nanomorph')
@@ -22,17 +21,8 @@ const INITIAL_STATE = {
  */
 
 const mapbox = component(function mapbox () {
-  return html`
-    <div class="Map-container" onload=${load} onunload=${unload} onupdate=${update}>
-    </div>
-  `
+  return html`<div class="Map-container"></div>`
 })
-
-/**
- * Use the cache plugin with our component
- */
-
-mapbox.use(cache())
 
 /**
  * Determine whether to update map location and place popup
@@ -42,8 +32,8 @@ mapbox.use(cache())
  * @returns {boolean} Always prevent component from rerendering
  */
 
-function update (ctx, args, prev) {
-  if (!ctx.map) { return false }
+mapbox.on('update', function update (ctx, args, prev) {
+  if (!ctx.map) return false
 
   if (args.reduce((changed, arg, i) => changed || arg !== prev[i], false)) {
     const [ lng, lat, positioned ] = args
@@ -61,18 +51,19 @@ function update (ctx, args, prev) {
   }
 
   return false
-}
+})
 
 /**
  * If the map hasn't been initialized already, load Mapbox and create map
  * @param {component.Context} ctx
+ * @param {HTMLElement} element
  * @param {number} lng
  * @param {number} lat
  * @param {boolean} positioned
  * @param {function} loading
  */
 
-function load (ctx, lng, lat, positioned, loading) {
+mapbox.on('load', function (ctx, element, lng, lat, positioned, loading) {
   if (ctx.map) {
     ctx.map.resize()
   } else {
@@ -99,17 +90,23 @@ function load (ctx, lng, lat, positioned, loading) {
 
     document.head.appendChild(script)
   }
-}
+})
 
 /**
  * Remove the popup when unmounting the map
  */
 
-function unload (ctx) {
+mapbox.on('unload', function (ctx) {
   if (ctx.popup.isOpen()) {
     ctx.popup.remove()
   }
-}
+})
+
+/**
+ * Use the cache plugin with our component
+ */
+
+mapbox.use(cache())
 
 const about = component(function page () {
   return html`
@@ -161,7 +158,7 @@ function view (state = {}) {
    */
 
   function loading (isLoading) {
-    morph(document.body, view(Object.assign({}, state, { isLoading })))
+    morph(document.body, view(Object.assign({}, state, {isLoading})))
   }
 
   /**
@@ -171,7 +168,7 @@ function view (state = {}) {
 
   function navigate (event) {
     const href = event.target.pathname
-    const next = Object.assign({}, state, { href })
+    const next = Object.assign({}, state, {href})
     window.history.pushState(next, document.title, href)
     morph(document.body, view(next))
     event.preventDefault()
@@ -182,7 +179,7 @@ function view (state = {}) {
    */
 
   function locate () {
-    morph(document.body, view(Object.assign({}, state, { isLoading: true })))
+    morph(document.body, view(Object.assign({}, state, {isLoading: true})))
     navigator.geolocation.getCurrentPosition(
       (position) => morph(document.body, view(Object.assign({}, state, {
         lat: position.coords.latitude,

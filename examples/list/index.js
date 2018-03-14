@@ -1,5 +1,3 @@
-/* eslint-env es6 */
-
 const html = require('bel')
 const { elements } = require('periodic-table')
 const morph = require('nanomorph')
@@ -12,19 +10,13 @@ const spawn = require('fun-component/spawn')
 
 const row = component(function element (ctx, props) {
   return html`
-    <tr class="List-item" onupdate=${update}>
+    <tr class="List-item">
       <td class="List-data">${props.atomicNumber}</td>
       <td class="List-data">${props.name} (${props.symbol})</td>
       <td class="List-data">${props.yearDiscovered}</td>
     </tr>
   `
 })
-
-/**
- * Use atomic number as key for component context
- */
-
-row.use(spawn(props => props.atomicNumber))
 
 /**
  * Freeze element in position and translate into its new position
@@ -34,8 +26,8 @@ row.use(spawn(props => props.atomicNumber))
  * @return {boolean} Prevent component from re-rendering
  */
 
-function update (ctx, [, index, done], [, prev]) {
-  if (index === prev) { return false }
+row.on('update', function (ctx, [, index, done], [, prev]) {
+  if (index === prev) return false
 
   const { element } = ctx
   const from = element.offsetTop
@@ -58,7 +50,13 @@ function update (ctx, [, index, done], [, prev]) {
   })
 
   return false
-}
+})
+
+/**
+ * Use atomic number as key for component context
+ */
+
+row.use(spawn((props) => props.atomicNumber))
 
 /**
  * Mount application on document body
@@ -79,10 +77,7 @@ function view (order = byNumber, reverse = false, inTransition = false) {
    */
 
   const items = Object.values(elements).sort(order)
-
-  if (reverse) {
-    items.reverse()
-  }
+  if (reverse) items.reverse()
 
   return html`
     <body class="App">
@@ -136,11 +131,7 @@ function byName (a, b) {
 }
 
 function byDate (a, b) {
-  if (a.yearDiscovered === 'Ancient') {
-    return -1
-  } else if (b.yearDiscovered === 'Ancient') {
-    return 1
-  }
-
+  if (a.yearDiscovered === 'Ancient') return -1
+  else if (b.yearDiscovered === 'Ancient') return 1
   return a.yearDiscovered > b.yearDiscovered ? 1 : -1
 }
