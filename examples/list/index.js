@@ -4,10 +4,6 @@ const morph = require('nanomorph')
 const component = require('fun-component')
 const spawn = require('fun-component/spawn')
 
-/**
- * Generic row component
- */
-
 const row = component(function element (ctx, props) {
   return html`
     <tr class="List-item">
@@ -18,64 +14,44 @@ const row = component(function element (ctx, props) {
   `
 })
 
-/**
- * Freeze element in position and translate into its new position
- * @param {component.Context} ctx
- * @param {array} [, index, done] Latest arguments
- * @param {array} [, prev] Previous arguments
- * @return {boolean} Prevent component from re-rendering
- */
+row.on('load', function (ctx, element) {
+  // stash initial offset on ctx
+  ctx.offset = element.offsetTop
+})
 
-row.on('update', function (ctx, [, index, done], [, prev]) {
-  if (index === prev) return false
+row.on('afterupdate', function (ctx, element, props, index, done) {
+  if (!ctx.offset) return
+  window.requestAnimationFrame(function () {
+    const offset = element.offsetTop
 
-  const { element } = ctx
-  const from = element.offsetTop
+    // put element back at previous offset
+    element.style.transform = `translateY(${ctx.offset - offset}px)`
 
-  window.requestAnimationFrame(() => {
-    const to = element.offsetTop
-
-    element.style.transform = `translateY(${from - to}px)`
-
-    window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(function () {
       element.addEventListener('transitionend', function ontransitionend () {
         element.removeEventListener('transitionend', ontransitionend)
         element.classList.remove('in-transition')
+        ctx.offset = offset
         done()
       })
 
+      // trigger transition
       element.classList.add('in-transition')
-      element.style.transform = null
+      element.style.removeProperty('transform')
     })
   })
-
-  return false
 })
 
-/**
- * Use atomic number as key for component context
- */
+// use atomic number as key for component context
+row.use(spawn((props) => props.atomicNumber.toString()))
 
-row.use(spawn((props) => props.atomicNumber))
-
-/**
- * Mount application on document body
- */
-
+// mount application on document body
 morph(document.body, view())
 
-/**
- * Main view
- * @param {function} order
- * @param {boolean} reverse
- * @returns {HTMLElement}
- */
-
+// main view
+// (fn, bool, bool) -> HTMLElement
 function view (order = byNumber, reverse = false, inTransition = false) {
-  /**
-   * Create a new list of sorted rows
-   */
-
+  // create a new list of sorted rows
   const items = Object.values(elements).sort(order)
   if (reverse) items.reverse()
 
@@ -100,36 +76,37 @@ function view (order = byNumber, reverse = false, inTransition = false) {
     </body>
   `
 
-  /**
-   * Rerender application using given sort function
-   */
-
+  // rerender application using given sort function
+  // fn -> fn
   function sort (next) {
     return function () {
       morph(document.body, view(next, (next === order && !reverse), true))
     }
   }
 
-  /**
-   * Rerender application with active buttons
-   */
-
+  // rerender application with active buttons
+  // () -> void
   function done () {
-    if (inTransition) {
-      inTransition = false
-      morph(document.body, view(order, reverse, inTransition))
-    }
+    if (!inTransition) return
+    inTransition = false
+    morph(document.body, view(order, reverse, inTransition))
   }
 }
 
+// sort by atomic number
+// (obj, obj) -> num
 function byNumber (a, b) {
   return a.atomicNumber > b.atomicNumber ? 1 : -1
 }
 
+// sort by atom name
+// (obj, obj) -> num
 function byName (a, b) {
   return a.name > b.name ? 1 : -1
 }
 
+// sort by date discovered
+// (obj, obj) -> num
 function byDate (a, b) {
   if (a.yearDiscovered === 'Ancient') return -1
   else if (b.yearDiscovered === 'Ancient') return 1

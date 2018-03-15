@@ -16,25 +16,14 @@ const INITIAL_STATE = {
   href: window.location.pathname
 }
 
-/**
- * Create Mapbox container component
- */
-
 const mapbox = component(function mapbox () {
   return html`<div class="Map-container"></div>`
 })
 
-/**
- * Determine whether to update map location and place popup
- * @param {component.Context} ctx
- * @param {array} args List of latest arguments used to render component
- * @param {array} prev List of previous arguments used to render component
- * @returns {boolean} Always prevent component from rerendering
- */
-
 mapbox.on('update', function update (ctx, args, prev) {
   if (!ctx.map) return false
 
+  // shallow diff of arguments to see if anything has changed
   if (args.reduce((changed, arg, i) => changed || arg !== prev[i], false)) {
     const [ lng, lat, positioned ] = args
 
@@ -53,24 +42,15 @@ mapbox.on('update', function update (ctx, args, prev) {
   return false
 })
 
-/**
- * If the map hasn't been initialized already, load Mapbox and create map
- * @param {component.Context} ctx
- * @param {HTMLElement} element
- * @param {number} lng
- * @param {number} lat
- * @param {boolean} positioned
- * @param {function} loading
- */
-
 mapbox.on('load', function (ctx, element, lng, lat, positioned, loading) {
   if (ctx.map) {
+    // resize map when being re-mounted
     ctx.map.resize()
   } else {
+    // load mapbox library
     const script = html`<script src="${MAPBOX_URL}"></script>`
 
     loading(true)
-
     script.onload = () => {
       mapboxgl.accessToken = MAPBOX_TOKEN
       ctx.map = new mapboxgl.Map({
@@ -80,32 +60,27 @@ mapbox.on('load', function (ctx, element, lng, lat, positioned, loading) {
         style: 'mapbox://styles/tornqvist/cj8zu6vbvc0i62rn6oxb7gfyb'
       })
 
+      // initialize a popup and stash on ctx
       ctx.popup = new mapboxgl.Popup({
         closeOnClick: false,
         closeButton: false
       })
 
+      // callback once mapbox has finshed loaded
       ctx.map.on('load', () => loading(false))
     }
-
     document.head.appendChild(script)
   }
 })
 
-/**
- * Remove the popup when unmounting the map
- */
-
 mapbox.on('unload', function (ctx) {
   if (ctx.popup.isOpen()) {
+    // remove the popup when unmounting the map
     ctx.popup.remove()
   }
 })
 
-/**
- * Use the cache plugin with our component
- */
-
+// cache map container element
 mapbox.use(cache())
 
 const about = component(function page () {
@@ -118,23 +93,15 @@ const about = component(function page () {
   `
 })
 
-/**
- * Set up history routing handlers
- */
-
+// handle browser history
 window.history.replaceState(INITIAL_STATE, document.title, window.location.pathname)
 window.onpopstate = event => morph(document.body, view(event.state))
 
-/**
- * Mount app in DOM
- */
-
+// mount app in DOM
 morph(document.body, view(INITIAL_STATE))
 
-/**
- * Main view, nothing special, really
- */
-
+// main view
+// obj -> HTMLElement
 function view (state = {}) {
   return html`
     <body class="App">
@@ -152,20 +119,14 @@ function view (state = {}) {
     </body>
   `
 
-  /**
-   * Toggle loading state of application
-   * @param {boolean} isLoading
-   */
-
+  // toggle loading state of application
+  // bool -> void
   function loading (isLoading) {
     morph(document.body, view(Object.assign({}, state, {isLoading})))
   }
 
-  /**
-   * Handle navigating between views
-   * @param {object} event
-   */
-
+  // handle navigating between views
+  // obj -> void
   function navigate (event) {
     const href = event.target.pathname
     const next = Object.assign({}, state, {href})
@@ -174,10 +135,8 @@ function view (state = {}) {
     event.preventDefault()
   }
 
-  /**
-   * Find user location
-   */
-
+  // find user location
+  // () -> void
   function locate () {
     morph(document.body, view(Object.assign({}, state, {isLoading: true})))
     navigator.geolocation.getCurrentPosition(
