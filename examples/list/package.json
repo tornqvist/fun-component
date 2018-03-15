@@ -1,7 +1,6 @@
 {
   "name": "fun-component-list",
   "scripts": {
-    "prestart": "npm install",
     "start": "budo index.js --title 'List Example | fun-component' --css index.css"
   },
   "browserify": {

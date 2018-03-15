@@ -1,7 +1,6 @@
 {
   "name": "fun-component-expandable",
   "scripts": {
-    "prestart": "npm install",
     "start": "budo index.js --title 'Expandable Example | fun-component' --css index.css"
   },
   "browserify": {

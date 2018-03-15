@@ -8,9 +8,9 @@
     "test": "npm run test:node && npm run test:browser",
     "test:browser": "browserify test/browser.js | tape-run | tap-format-spec",
     "test:node": "NODE_ENV=test node test/node.js | tap-format-spec",
-    "example:mapbox": "npm start --prefix ./examples/mapbox -- -- --transform-key=development",
-    "example:list": "npm start --prefix ./examples/list -- -- --transform-key=development",
-    "example:expandable": "npm start --prefix ./examples/expandable -- -- --transform-key=development"
+    "example:mapbox": "npm install --prefix ./examples/mapbox && npm start --prefix ./examples/mapbox -- -- --transform-key=development",
+    "example:list": "npm install --prefix ./examples/list && npm start --prefix ./examples/list -- -- --transform-key=development",
+    "example:expandable": "npm install --prefix ./examples/expandable && npm start --prefix ./examples/expandable -- -- --transform-key=development"
   },
   "repository": {
     "type": "git",

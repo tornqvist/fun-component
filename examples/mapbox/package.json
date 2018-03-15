@@ -1,7 +1,6 @@
 {
   "name": "fun-component-mapbox",
   "scripts": {
-    "prestart": "npm install",
     "start": "budo index.js --pushstate --title 'Mapbox Example | fun-component' --css index.css"
   },
   "browserify": {
