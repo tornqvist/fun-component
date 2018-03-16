@@ -36,8 +36,8 @@ var button = module.exports = component(function button (ctx, clicks, onclick) {
 })
 
 // only bother updating if text changed
-button.on('update', function (ctx, [text], [prev]) {
-  return text !== prev
+button.on('update', function (ctx, [clicks], [prev]) {
+  return clicks !== prev
 })
 ```
 
