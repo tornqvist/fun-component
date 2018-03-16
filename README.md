@@ -108,7 +108,7 @@ Remove lifecycle eventlistener, see [Lifecycle events](#lifecycle-events).
 
 Add plugin, see [Plugins](#plugins).
 
-#### `button.fork()`
+#### `button.fork(name)`
 
 Create a new component context inheriting listeners and plugins, see [Composition and forking](#composition-and-forking)
 
