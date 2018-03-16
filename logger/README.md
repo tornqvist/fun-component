@@ -7,7 +7,7 @@ Log all lifecycle events. Using [nanologger](https://github.com/choojs/nanologge
 Access the nanologger instance under `ctx.log`.
 
 ```javascript
-const html = require('bel')
+const html = require('nanohtml')
 const component = require('fun-component')
 
 var hello = component(function hello (ctx, title) {

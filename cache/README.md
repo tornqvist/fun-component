@@ -7,7 +7,7 @@ Cache component element for reuse.
 When working with 3rd party libraries you might *not* want the element to rerender every time it is removed and added back to the page. This examples illustrates caching a Mapbox container element.
 
 ```javascript
-const html = require('bel')
+const html = require('nanohtml')
 const component = require('fun-component')
 const cache = require('fun-component/cache')
 
@@ -50,7 +50,7 @@ Create middleware that saves a reference to mounted element as `ctx.cached`. Use
 Unset `ctx.cached` to have a element be re-created on next render.
 
 ```javascript
-const html = require('bel')
+const html = require('nanohtml')
 const component = require('fun-component')
 const cache = require('fun-component/cache')
 

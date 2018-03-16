@@ -24,7 +24,7 @@ Pass in a function and get another one back that handles rerendering.
 
 ```javascript
 // button.js
-var html = require('bel')
+var html = require('nanohtml')
 var component = require('fun-component')
 
 var button = module.exports = component(function button (ctx, clicks, onclick) {
@@ -117,7 +117,7 @@ Create a new component context inheriting listeners and plugins, see [Compositio
 All the lifecycle hooks of nanocomponent are supported, i.e. [`beforerender`](https://github.com/choojs/nanocomponent#nanocomponentprototypebeforerenderel), [`load`](https://github.com/choojs/nanocomponent#nanocomponentprototypeloadel), [`unload`](https://github.com/choojs/nanocomponent#nanocomponentprototypeunloadel), [`afterupdate`](https://github.com/choojs/nanocomponent#nanocomponentprototypeafterupdateel), and [`afterreorder`](https://github.com/choojs/nanocomponent#nanocomponentprototypeafterreorderel). Any number of listeners can be added for an event. The arguments are always prefixed with the component context and the element, followed by the render arguments.
 
 ```javascript
-var html = require('bel')
+var html = require('nanohtml')
 var component = require('fun-component')
 
 var greeting = component(function greeting (ctx, name) {
@@ -141,7 +141,7 @@ greeting('planet')
 The component context (`ctx`) is prefixed to the arguments of all lifecycle events and the render function itself. The context object can be used to access the underlying [nanocomponent](https://github.com/choojs/nanocomponent).
 
 ```javascript
-var html = require('bel')
+var html = require('nanohtml')
 var component = require('fun-component')
 
 // exposing nanocomponent inner workings
@@ -166,7 +166,7 @@ If you attach several `update` listerners the component will update if *any one*
 ***Tip**: Using ES2015 array deconstructuring makes this a breeze.*
 
 ```javascript
-var html = require('bel')
+var html = require('nanohtml')
 var component = require('fun-component')
 
 var greeting = component(function greeting (ctx, name) {
@@ -184,7 +184,7 @@ greeting.on('update', function (ctx, [name], [prev]) {
 Plugins are middleware functions that are called just before the component is rendered or updated. A plugin can inspect the arguments, modify the context object or even return another context object that is to be used for rendering the component.
 
 ```javascript
-const html = require('bel')
+const html = require('nanohtml')
 const component = require('fun-component')
 
 const greeter = component(function greeting (ctx, title) {
@@ -226,7 +226,7 @@ Using lifecycle event listeners and plugins makes it very easy to lazily compose
 
 ```javascript
 // button.js
-var html = require('bel')
+var html = require('nanohtml')
 var component = require('fun-component')
 
 var button = module.exports = component(function button (ctx, text, onclick) {
@@ -241,7 +241,7 @@ button.on('update', function (ctx, [text], [prev]) {
 
 ```javascript
 // infinite-tweets.js
-var html = require('bel')
+var html = require('nanohtml')
 var component = require('fun-component')
 var onIntersect = require('on-intersect')
 var button = require('./button')
@@ -288,8 +288,8 @@ Not for you? If you need more fine grained control or perfer a straight up objec
 - [yoshuawuyts/microcomponent](https://github.com/yoshuawuyts/microcomponent)
 - [jongacnik/component-box](https://github.com/jongacnik/component-box)
 - [choojs/nanocomponent](https://github.com/choojs/nanocomponent)
+- [choojs/nanohtml](https://github.com/choojs/nanohtml)
 - [choojs/choo](https://github.com/choojs/choo)
-- [shama/bel](https://github.com/shama/bel)
 
 ## License
 

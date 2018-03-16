@@ -19,9 +19,9 @@
     "aliasify": "*"
   },
   "dependencies": {
-    "bel": "*",
     "budo": "*",
     "fun-component": "*",
+    "nanohtml": "*",
     "nanomorph": "*",
     "periodic-table": "0.0.8"
   }

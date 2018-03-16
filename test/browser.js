@@ -1,7 +1,5 @@
-/* eslint-env es6 */
-
-var html = require('bel')
 var test = require('tape')
+var html = require('nanohtml')
 var component = require('../')
 var cache = require('../cache')
 var logger = require('../logger')

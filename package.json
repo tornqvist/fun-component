@@ -18,7 +18,7 @@
   },
   "keywords": [
     "choo",
-    "bel",
+    "nanohtml",
     "component",
     "html",
     "function"
@@ -31,8 +31,8 @@
   "homepage": "https://github.com/tornqvist/fun-component#readme",
   "devDependencies": {
     "@tap-format/spec": "^0.2.0",
-    "bel": "^5.1.5",
     "browserify": "^15.2.0",
+    "nanohtml": "^1.2.1",
     "standard": "^11.0.0",
     "tape": "^4.8.0",
     "tape-run": "^3.0.0"

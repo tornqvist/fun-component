@@ -5,7 +5,7 @@ Simple state manager that handles rerendering. Much like React `setState`.
 ## Usage
 
 ```javascript
-const html = require('bel')
+const html = require('nanohtml')
 const component = require('fun-component')
 const restate = require('fun-component/restate')
 
@@ -23,7 +23,7 @@ const expandable = component(function expandable (ctx, text) {
 })
 
 // set initial state of exandables to be collapsed
-expandable.use(restate({ expanded: false }))
+expandable.use(restate({expanded: false}))
 
 document.body.appendChild(expandable('Hi there!'))
 ```

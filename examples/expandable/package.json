@@ -19,10 +19,10 @@
     "aliasify": "*"
   },
   "dependencies": {
-    "bel": "*",
     "budo": "*",
     "fun-component": "*",
     "markdown-it": "*",
+    "nanohtml": "*",
     "nanomorph": "*"
   }
 }

@@ -1,8 +1,8 @@
-const html = require('bel')
-const { elements } = require('periodic-table')
+const html = require('nanohtml')
 const morph = require('nanomorph')
 const component = require('fun-component')
 const spawn = require('fun-component/spawn')
+const { elements } = require('periodic-table')
 
 const row = component(function element (ctx, props) {
   return html`

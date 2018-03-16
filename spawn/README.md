@@ -5,7 +5,7 @@ Create new component contexts on demand, optionally discarding them on unload.
 ## Usage
 
 ```javascript
-const html = require('bel')
+const html = require('nanohtml')
 const component = require('fun-component')
 const spawn = require('fun-component/spawn')
 
@@ -51,16 +51,16 @@ If set to `true` will keep the reference to the context after it is removed from
 An object for storing context instances on. Will use common lru methods `get`, `set`, `remove` if defined, otherwise stores instances on the cache object by their identity.
 
 ```javascript
-var html = require('bel')
 var LRU = require('nanolru')
+var html = require('nanohtml')
 var component = require('fun-component')
 
 var cache = new LRU(3) // only ever allow a maximum of three instances of button
-var button = component(function button (id, text, onclick) {
+var button = component(function button (ctx, id, text, onclick) {
   return html`<button name="${id}" onclick=${onclick}>${text}</button>`
 })
 
-button.use(spawn((id) => id), {cache: cache})
+button.use(spawn((id) => id, {cache: cache}))
 
 module.exports = button
 ```

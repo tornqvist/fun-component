@@ -1,6 +1,6 @@
 /* globals mapboxgl */
 
-const html = require('bel')
+const html = require('nanohtml')
 const morph = require('nanomorph')
 const component = require('fun-component')
 const cache = require('fun-component/cache')
