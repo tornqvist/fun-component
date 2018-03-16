@@ -149,7 +149,7 @@ module.exports = component(function time (ctx) {
   return html`
     <div>
       The time is ${new Date()}
-      <button onclick=${() => ctx.rerender())}>What time is it?</button>
+      <button onclick=${() => ctx.rerender()}>What time is it?</button>
     </div>
   `
 })
@@ -191,8 +191,8 @@ const greeter = component(function greeting (ctx, title) {
   return html`<h1>Hello ${title}!</h1>`
 })
 
-greeter.use(function log(ctx, title) {
-  console.log(`Rendering ${ctx._ncID} with ${title}`)
+greeter.use(function log (ctx, title) {
+  console.log(`Rendering ${ctx._name} with ${title}`)
   return ctx
 })
 
