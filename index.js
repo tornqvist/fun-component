@@ -19,12 +19,16 @@ FunComponent.prototype.constructor = FunComponent
 FunComponent.prototype.addHook = function (type, fn) {
   var self = this
   var id = this._hid++
-  // TODO: remove hooks from last round
+
   var node = this._stack[id] = [type, hook]
   assert(node[0] === type, 'fun-component: hook order mismatch, you should not change the order in which hooks are called')
 
   var hooks = this._hooks[type] = this._hooks[type] || []
-  hooks.push(hook)
+  var index = hooks.push([hook, remove])
+
+  function remove () {
+    hooks.splice(index, 1)
+  }
 
   function hook () {
     var _hid = self._hid
@@ -87,12 +91,12 @@ function proxy (type) {
     var hooks = this._hooks[type]
     if (!hooks) return
     return function () {
-      var self = this
-      var args = arguments
-      return hooks.reduce(function (prev, hook) {
-        var value = hook.apply(self, args)
-        return prev || value
-      }, UNDEFINED)
+      var res
+      for (var i = 0, len = this._hooks.length; i < len; i++) {
+        if (!this._hooks[i][0] === type) continue
+        res = res || this._hooks[i][1].apply(this, arguments)
+      }
+      return res
     }
   }
 }
@@ -116,9 +120,10 @@ function component (name, render) {
   }
   instance.createElement = function () {
     this._hid = 0
-    var prev = this._hooks.length
+    var keys = Object.keys(this._hooks)
+    var len = keys.length
     var val = render.apply(UNDEFINED, arguments)
-    assert(prev === this._hooks.length, 'fun-component: hook count mismatch, you should not change the order in which hooks are called')
+    assert(len === this._hooks.length, 'fun-component: hook count mismatch, you should not change the order in which hooks are called')
     return val
   }
 
